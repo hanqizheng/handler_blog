@@ -1,0 +1,73 @@
+{
+  "name": "handler_blog",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "format": "prettier -w .",
+    "format:check": "prettier --check .",
+    "commitlint": "commitlint --edit",
+    "lint-staged": "lint-staged",
+    "prepare": "simple-git-hooks",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@radix-ui/react-dropdown-menu": "^2.1.4",
+    "@radix-ui/react-slot": "^1.1.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.38.3",
+    "is-hotkey": "^0.2.0",
+    "lucide-react": "^0.453.0",
+    "mysql2": "^3.11.0",
+    "next": "^15.5.9",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "slate": "^0.110.2",
+    "slate-history": "^0.110.2",
+    "slate-react": "^0.110.2",
+    "tailwind-merge": "^2.5.3",
+    "next-intl": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "simple-git-hooks": "^2.0.0",
+    "tailwindcss": "^4.1.18",
+    "@tailwindcss/postcss": "^4.1.18",
+    "typescript": "^5.0.0",
+    "drizzle-kit": "^0.30.4"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ],
+    "*.{css,js,jsx,json,md,ts,tsx,yaml,yml}": [
+      "prettier --check --write"
+    ]
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm -s lint-staged && pnpm -s type-check",
+    "commit-msg": "pnpm -s commitlint --edit $1"
+  }
+}
