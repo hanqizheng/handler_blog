@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: handler_blog_mysql
+    ports:
+      - "43371:43371"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: handler_blog
+      MYSQL_USER: hanqizheng
+      MYSQL_PASSWORD: han357571432
+      MYSQL_TCP_PORT: 43371
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  mysql_data:
