@@ -1,0 +1,460 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MarkdownEditor component should handle empty value 1`] = `
+<div>
+  <div
+    class="markdown-editor"
+  >
+    <div
+      class="md-toolbar"
+    >
+      <button
+        aria-label="撤销"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-left"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="重做"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-right"
+          style="font-size: 16px;"
+        />
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <span
+        class="ant-dropdown-trigger"
+      >
+        <button
+          aria-label="标题样式"
+          class="md-toolbar-btn"
+          type="button"
+        >
+          <span
+            class="md-toolbar-text-icon"
+          >
+            T
+          </span>
+        </button>
+      </span>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="加粗"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-b"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="斜体"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-italic"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="高亮"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="md-toolbar-highlight-icon"
+        >
+          H
+        </span>
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="有序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-numbers"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="无序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-bullets"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="引用"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-quotes"
+          style="font-size: 16px;"
+        />
+      </button>
+    </div>
+    <div
+      aria-multiline="true"
+      autocapitalize="false"
+      autocorrect="false"
+      class="md-editor-content"
+      contenteditable="true"
+      data-slate-editor="true"
+      data-slate-node="value"
+      role="textbox"
+      spellcheck="false"
+      style="position: relative; white-space: pre-wrap; word-wrap: break-word; min-height: 320px;"
+      translate="no"
+      zindex="-1"
+    >
+      <p
+        class="md-paragraph"
+        data-slate-node="element"
+      >
+        <span
+          data-slate-node="text"
+        >
+          <span
+            data-slate-leaf="true"
+          >
+            <span
+              data-slate-length="0"
+              data-slate-zero-width="n"
+            >
+              ﻿
+              <br />
+            </span>
+          </span>
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MarkdownEditor component should handle undefined value 1`] = `
+<div>
+  <div
+    class="markdown-editor"
+  >
+    <div
+      class="md-toolbar"
+    >
+      <button
+        aria-label="撤销"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-left"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="重做"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-right"
+          style="font-size: 16px;"
+        />
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <span
+        class="ant-dropdown-trigger"
+      >
+        <button
+          aria-label="标题样式"
+          class="md-toolbar-btn"
+          type="button"
+        >
+          <span
+            class="md-toolbar-text-icon"
+          >
+            T
+          </span>
+        </button>
+      </span>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="加粗"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-b"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="斜体"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-italic"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="高亮"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="md-toolbar-highlight-icon"
+        >
+          H
+        </span>
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="有序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-numbers"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="无序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-bullets"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="引用"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-quotes"
+          style="font-size: 16px;"
+        />
+      </button>
+    </div>
+    <div
+      aria-multiline="true"
+      autocapitalize="false"
+      autocorrect="false"
+      class="md-editor-content"
+      contenteditable="true"
+      data-slate-editor="true"
+      data-slate-node="value"
+      role="textbox"
+      spellcheck="false"
+      style="position: relative; white-space: pre-wrap; word-wrap: break-word; min-height: 320px;"
+      translate="no"
+      zindex="-1"
+    >
+      <p
+        class="md-paragraph"
+        data-slate-node="element"
+      >
+        <span
+          data-slate-node="text"
+        >
+          <span
+            data-slate-leaf="true"
+          >
+            <span
+              data-slate-length="0"
+              data-slate-zero-width="n"
+            >
+              ﻿
+              <br />
+            </span>
+          </span>
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`MarkdownEditor component should render without crashing 1`] = `
+<div>
+  <div
+    class="markdown-editor"
+  >
+    <div
+      class="md-toolbar"
+    >
+      <button
+        aria-label="撤销"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-left"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="重做"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-arrow-u-up-right"
+          style="font-size: 16px;"
+        />
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <span
+        class="ant-dropdown-trigger"
+      >
+        <button
+          aria-label="标题样式"
+          class="md-toolbar-btn"
+          type="button"
+        >
+          <span
+            class="md-toolbar-text-icon"
+          >
+            T
+          </span>
+        </button>
+      </span>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="加粗"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-b"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="斜体"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-text-italic"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="高亮"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="md-toolbar-highlight-icon"
+        >
+          H
+        </span>
+      </button>
+      <span
+        class="md-toolbar-divider"
+      />
+      <button
+        aria-label="有序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-numbers"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="无序列表"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-list-bullets"
+          style="font-size: 16px;"
+        />
+      </button>
+      <button
+        aria-label="引用"
+        class="md-toolbar-btn"
+        type="button"
+      >
+        <span
+          class="iconfont icon-quotes"
+          style="font-size: 16px;"
+        />
+      </button>
+    </div>
+    <div
+      aria-multiline="true"
+      autocapitalize="false"
+      autocorrect="false"
+      class="md-editor-content"
+      contenteditable="true"
+      data-slate-editor="true"
+      data-slate-node="value"
+      role="textbox"
+      spellcheck="false"
+      style="position: relative; white-space: pre-wrap; word-wrap: break-word; min-height: 320px;"
+      translate="no"
+      zindex="-1"
+    >
+      <p
+        class="md-paragraph"
+        data-slate-node="element"
+      >
+        <span
+          data-slate-node="text"
+        >
+          <span
+            data-slate-leaf="true"
+          >
+            <span
+              data-slate-length="0"
+              data-slate-zero-width="n"
+            >
+              ﻿
+              <br />
+            </span>
+          </span>
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+`;

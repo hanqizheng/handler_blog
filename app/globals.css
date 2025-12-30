@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: 255 255 255;
+  --color-fg: 17 24 39;
+  --color-primary: 37 99 235;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--color-bg));
+  color: rgb(var(--color-fg));
+}
