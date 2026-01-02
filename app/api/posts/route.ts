@@ -19,9 +19,15 @@ export async function POST(request: Request) {
     payload = null;
   }
 
-  const data = payload as { title?: unknown; content?: unknown };
+  const data = payload as {
+    title?: unknown;
+    content?: unknown;
+    assetFolder?: unknown;
+  };
   const title = typeof data?.title === "string" ? data.title.trim() : "";
   const content = typeof data?.content === "string" ? data.content.trim() : "";
+  const assetFolder =
+    typeof data?.assetFolder === "string" ? data.assetFolder.trim() : "";
 
   if (!title || !content) {
     return Response.json(
@@ -30,7 +36,13 @@ export async function POST(request: Request) {
     );
   }
 
-  await db.insert(posts).values({ title, content });
+  const resolvedAssetFolder = assetFolder || `${Date.now()}`;
+
+  await db.insert(posts).values({
+    title,
+    content,
+    assetFolder: resolvedAssetFolder,
+  });
 
   return Response.json({ ok: true });
 }

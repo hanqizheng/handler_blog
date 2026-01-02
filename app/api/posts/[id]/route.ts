@@ -15,9 +15,10 @@ function parseId(rawId: string) {
 
 export async function GET(
   _request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
-  const id = parseId(context.params.id);
+  const { id: rawId } = await context.params;
+  const id = parseId(rawId);
   if (!id) {
     return Response.json({ ok: false, error: "invalid id" }, { status: 400 });
   }
@@ -32,9 +33,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
-  const id = parseId(context.params.id);
+  const { id: rawId } = await context.params;
+  const id = parseId(rawId);
   if (!id) {
     return Response.json({ ok: false, error: "invalid id" }, { status: 400 });
   }
@@ -47,9 +49,15 @@ export async function PUT(
     payload = null;
   }
 
-  const data = payload as { title?: unknown; content?: unknown };
+  const data = payload as {
+    title?: unknown;
+    content?: unknown;
+    assetFolder?: unknown;
+  };
   const title = typeof data?.title === "string" ? data.title.trim() : "";
   const content = typeof data?.content === "string" ? data.content.trim() : "";
+  const assetFolder =
+    typeof data?.assetFolder === "string" ? data.assetFolder.trim() : "";
 
   if (!title || !content) {
     return Response.json(
@@ -58,16 +66,24 @@ export async function PUT(
     );
   }
 
-  await db.update(posts).set({ title, content }).where(eq(posts.id, id));
+  await db
+    .update(posts)
+    .set({
+      title,
+      content,
+      ...(assetFolder ? { assetFolder } : {}),
+    })
+    .where(eq(posts.id, id));
 
   return Response.json({ ok: true });
 }
 
 export async function DELETE(
   _request: Request,
-  context: { params: { id: string } },
+  context: { params: Promise<{ id: string }> },
 ) {
-  const id = parseId(context.params.id);
+  const { id: rawId } = await context.params;
+  const id = parseId(rawId);
   if (!id) {
     return Response.json({ ok: false, error: "invalid id" }, { status: 400 });
   }
