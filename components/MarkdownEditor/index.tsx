@@ -11,12 +11,19 @@ import React, {
 } from "react";
 
 import isHotkey from "is-hotkey";
-import type { Descendant, Editor } from "slate";
+import type { Descendant, Range } from "slate";
 import { Transforms, createEditor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, ReactEditor, Slate, withReact } from "slate-react";
 
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import {
+  DEFAULT_MAX_FILE_SIZE,
+  isTypeAllowed,
+  resolveFileSizeLimit,
+  useQiniuUpload,
+} from "@/hooks/useQiniuUpload-sdk";
 
 import { MarkdownToolbar } from "./Toolbar";
 import { DEFAULT_TOOLBAR_ITEMS, HOTKEYS } from "./constants";
@@ -37,10 +44,13 @@ import {
 import type {
   MarkdownEditorProps,
   MarkdownEditorRef,
+  MarkdownEditorType,
+  MarkdownElement,
   MarkdownTextMark,
 } from "./type";
 
 const DEFAULT_EDITOR_MIN_HEIGHT = 320;
+const DEFAULT_IMAGE_ALLOWED_TYPES = ["image/*"];
 
 export const MarkdownEditor = React.forwardRef<
   MarkdownEditorRef,
@@ -56,10 +66,16 @@ export const MarkdownEditor = React.forwardRef<
     className,
     style,
     toolbarItems = DEFAULT_TOOLBAR_ITEMS,
+    imageUpload,
   } = props;
 
-  const editor = useMemo<Editor>(() => {
-    return withHistory(withReact(createEditor()));
+  const editor = useMemo<MarkdownEditorType>(() => {
+    const baseEditor = withHistory(withReact(createEditor()));
+    const { isVoid } = baseEditor;
+    baseEditor.isVoid = (element) => {
+      return element.type === "image" ? true : isVoid(element);
+    };
+    return baseEditor as MarkdownEditorType;
   }, []);
 
   const [markdownValue, setMarkdownValue] = useControllableValue<string>(
@@ -73,11 +89,23 @@ export const MarkdownEditor = React.forwardRef<
   );
 
   const lastSyncedMarkdownRef = useRef<string>(markdownValue);
+  const lastSelectionRef = useRef<Range | null>(null);
   const [slateVersion, setSlateVersion] = useState(0);
   const editorMinHeightStyle = useMemo<CSSProperties>(
     () => ({ minHeight: DEFAULT_EDITOR_MIN_HEIGHT }),
     [],
   );
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingImagesRef = useRef<Map<string, File>>(new Map());
+
+  const imageUploadEnabled = imageUpload?.enabled ?? true;
+  const deferUpload = imageUpload?.deferUpload ?? false;
+  const { uploadFile } = useQiniuUpload({
+    maxFileSize: imageUpload?.maxFileSize,
+    maxFileSizeByType: imageUpload?.maxFileSizeByType,
+    allowedTypes: imageUpload?.allowedTypes ?? DEFAULT_IMAGE_ALLOWED_TYPES,
+    pathPrefix: imageUpload?.pathPrefix ?? "markdown",
+  });
 
   const resolvedPlaceholder = placeholder ?? "开始编写 Markdown 内容";
 
@@ -90,9 +118,19 @@ export const MarkdownEditor = React.forwardRef<
     setSlateVersion((prev) => prev + 1);
   }, [markdownValue]);
 
+  useEffect(() => {
+    return () => {
+      pendingImagesRef.current.forEach((_, url) => {
+        URL.revokeObjectURL(url);
+      });
+      pendingImagesRef.current.clear();
+    };
+  }, []);
+
   const handleSlateChange = useCallback(
     (nextValue: Descendant[]) => {
       setEditorValue(nextValue);
+      lastSelectionRef.current = editor.selection;
 
       if (disabled || readOnly) {
         return;
@@ -110,6 +148,92 @@ export const MarkdownEditor = React.forwardRef<
       setMarkdownValue(markdown);
     },
     [disabled, readOnly, setMarkdownValue],
+  );
+
+  const insertImageFiles = useCallback(
+    async (files: File[]) => {
+      if (disabled || readOnly || !imageUploadEnabled) {
+        return;
+      }
+
+      const imageFiles = files.filter((file) =>
+        file.type.startsWith("image/"),
+      );
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      if (!editor.selection && lastSelectionRef.current) {
+        Transforms.select(editor, lastSelectionRef.current);
+      }
+
+      for (const file of imageFiles) {
+        const allowedTypes =
+          imageUpload?.allowedTypes ?? DEFAULT_IMAGE_ALLOWED_TYPES;
+        const maxFileSize = imageUpload?.maxFileSize ?? DEFAULT_MAX_FILE_SIZE;
+        const maxFileSizeByType = imageUpload?.maxFileSizeByType;
+
+        if (!isTypeAllowed(file, allowedTypes)) {
+          toast.error(`图片 ${file.name} 类型不支持`);
+          continue;
+        }
+
+        const sizeLimit = resolveFileSizeLimit(
+          file.type,
+          maxFileSizeByType,
+          maxFileSize,
+        );
+        if (file.size > sizeLimit) {
+          toast.error(`图片 ${file.name} 超过大小限制`);
+          continue;
+        }
+
+        if (deferUpload) {
+          const objectUrl = URL.createObjectURL(file);
+          pendingImagesRef.current.set(objectUrl, file);
+          const imageNode: MarkdownElement = {
+            type: "image",
+            url: objectUrl,
+            alt: file.name,
+            children: [{ text: "" }],
+          };
+          Transforms.insertNodes(editor, imageNode);
+          Transforms.insertNodes(editor, {
+            type: "paragraph",
+            children: [{ text: "" }],
+          } satisfies MarkdownElement);
+          continue;
+        }
+
+        try {
+          const result = await uploadFile(file);
+          const imageNode: MarkdownElement = {
+            type: "image",
+            url: result.url,
+            alt: file.name,
+            children: [{ text: "" }],
+          };
+          Transforms.insertNodes(editor, imageNode);
+          Transforms.insertNodes(editor, {
+            type: "paragraph",
+            children: [{ text: "" }],
+          } satisfies MarkdownElement);
+        } catch (error) {
+          toast.error(
+            `图片 ${file.name} 上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
+          );
+        }
+      }
+    },
+    [
+      disabled,
+      editor,
+      imageUpload,
+      imageUploadEnabled,
+      readOnly,
+      uploadFile,
+      deferUpload,
+    ],
   );
 
   const handleKeyDown = useCallback(
@@ -156,6 +280,19 @@ export const MarkdownEditor = React.forwardRef<
         return;
       }
 
+      if (imageUploadEnabled && event.clipboardData.files.length > 0) {
+        const files = Array.from(event.clipboardData.files);
+        const imageFiles = files.filter((file) =>
+          file.type.startsWith("image/"),
+        );
+
+        if (imageFiles.length > 0) {
+          event.preventDefault();
+          void insertImageFiles(imageFiles);
+          return;
+        }
+      }
+
       const text = event.clipboardData.getData("text/plain");
       if (!text) {
         return;
@@ -179,7 +316,47 @@ export const MarkdownEditor = React.forwardRef<
         Transforms.insertFragment(editor, nodes);
       }
     },
-    [disabled, editor, readOnly],
+    [disabled, insertImageFiles, readOnly, imageUploadEnabled],
+  );
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (disabled || readOnly || !imageUploadEnabled) {
+        return;
+      }
+
+      const files = Array.from(event.dataTransfer.files ?? []);
+      if (files.length === 0) {
+        return;
+      }
+
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
+      if (imageFiles.length === 0) {
+        return;
+      }
+
+      event.preventDefault();
+      const range = ReactEditor.findEventRange(editor, event);
+      if (range) {
+        Transforms.select(editor, range);
+      }
+
+      void insertImageFiles(imageFiles);
+    },
+    [disabled, editor, readOnly, imageUploadEnabled, insertImageFiles],
+  );
+
+  const handleDragOver = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      if (disabled || readOnly || !imageUploadEnabled) {
+        return;
+      }
+
+      if (event.dataTransfer.types?.includes("Files")) {
+        event.preventDefault();
+      }
+    },
+    [disabled, readOnly, imageUploadEnabled],
   );
 
   useImperativeHandle(
@@ -200,6 +377,20 @@ export const MarkdownEditor = React.forwardRef<
       focus: () => {
         ReactEditor.focus(editor);
       },
+      getPendingImages: () => {
+        return Array.from(pendingImagesRef.current.entries()).map(
+          ([url, file]) => ({ url, file }),
+        );
+      },
+      removePendingImages: (urls: string[]) => {
+        urls.forEach((url) => {
+          const file = pendingImagesRef.current.get(url);
+          if (file) {
+            URL.revokeObjectURL(url);
+          }
+          pendingImagesRef.current.delete(url);
+        });
+      },
     }),
     [editorValue, editor, setMarkdownValue],
   );
@@ -217,8 +408,12 @@ export const MarkdownEditor = React.forwardRef<
   const toolbarContext = useMemo(
     () => ({
       disabled: disabled || readOnly,
+      onRequestImageUpload:
+        disabled || readOnly || !imageUploadEnabled
+          ? undefined
+          : () => fileInputRef.current?.click(),
     }),
-    [disabled, readOnly],
+    [disabled, readOnly, imageUploadEnabled],
   );
 
   const slateValue = editorValue ?? DEFAULT_SLATE_VALUE;
@@ -241,6 +436,20 @@ export const MarkdownEditor = React.forwardRef<
         {!readOnly && (
           <MarkdownToolbar items={toolbarItems} context={toolbarContext} />
         )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            if (files.length > 0) {
+              void insertImageFiles(files);
+            }
+            event.target.value = "";
+          }}
+        />
         <Editable
           className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 focus:outline-none"
           style={editorMinHeightStyle}
@@ -250,6 +459,8 @@ export const MarkdownEditor = React.forwardRef<
           readOnly={disabled || readOnly}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
         />
       </Slate>
     </div>
@@ -257,5 +468,7 @@ export const MarkdownEditor = React.forwardRef<
 });
 
 MarkdownEditor.displayName = "MarkdownEditor";
+
+export type { MarkdownEditorProps, MarkdownEditorRef } from "./type";
 
 export default MarkdownEditor;

@@ -62,6 +62,18 @@ export interface MarkdownEditorProps {
    * @default DEFAULT_TOOLBAR_ITEMS
    */
   toolbarItems?: ToolbarItemConfig[];
+
+  /**
+   * Image upload configuration
+   */
+  imageUpload?: {
+    enabled?: boolean;
+    pathPrefix?: string;
+    maxFileSize?: number;
+    maxFileSizeByType?: Record<string, number>;
+    allowedTypes?: string[];
+    deferUpload?: boolean;
+  };
 }
 
 /**
@@ -82,6 +94,16 @@ export interface MarkdownEditorRef {
    * Focus the editor
    */
   focus: () => void;
+
+  /**
+   * Get pending images queued for upload
+   */
+  getPendingImages: () => Array<{ url: string; file: File }>;
+
+  /**
+   * Remove pending images by URL
+   */
+  removePendingImages: (urls: string[]) => void;
 }
 
 // Slate types for MarkdownEditor (local types, not module augmentation to avoid conflict with RichTextEditor)
@@ -97,7 +119,8 @@ export type MarkdownBlockType =
   | "numbered-list"
   | "list-item"
   | "block-quote"
-  | "code-block";
+  | "code-block"
+  | "image";
 
 export type MarkdownTextMark = "bold" | "italic" | "code" | "highlight";
 
@@ -111,6 +134,8 @@ export interface MarkdownText {
 
 export interface MarkdownElement {
   type: MarkdownBlockType;
+  url?: string;
+  alt?: string;
   children: Descendant[];
 }
 
@@ -126,7 +151,8 @@ export type BuiltinToolbarItem =
   | "highlight"
   | "orderedList"
   | "unorderedList"
-  | "blockquote";
+  | "blockquote"
+  | "image";
 
 export interface CustomToolbarItem {
   key: string;
@@ -140,4 +166,5 @@ export type ToolbarItemConfig =
 
 export interface ToolbarRenderContext {
   disabled?: boolean;
+  onRequestImageUpload?: () => void;
 }

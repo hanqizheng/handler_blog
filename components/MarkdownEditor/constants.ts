@@ -26,6 +26,7 @@ export const DEFAULT_TOOLBAR_ITEMS: ToolbarItemConfig[] = [
   "bold",
   "italic",
   "highlight",
+  "image",
   "divider",
   "orderedList",
   "unorderedList",

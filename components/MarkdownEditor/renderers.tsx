@@ -2,6 +2,8 @@ import React from "react";
 
 import type { RenderElementProps, RenderLeafProps } from "slate-react";
 
+import { getImageUrl } from "@/utils/image";
+
 import type { MarkdownElement, MarkdownText } from "./type";
 
 export const Element: React.FC<RenderElementProps> = ({
@@ -83,6 +85,19 @@ export const Element: React.FC<RenderElementProps> = ({
         >
           <code>{children}</code>
         </pre>
+      );
+    case "image":
+      return (
+        <div className="my-3" {...attributes}>
+          <div contentEditable={false}>
+            <img
+              src={getImageUrl(currentElement.url)}
+              alt={currentElement.alt ?? ""}
+              className="max-w-full rounded-md border border-slate-200"
+            />
+          </div>
+          {children}
+        </div>
       );
     case "paragraph":
     default:

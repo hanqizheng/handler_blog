@@ -54,6 +54,8 @@ const serializeElement = (element: MarkdownElement): string => {
     .join("");
 
   switch (element.type) {
+    case "image":
+      return `![${element.alt ?? ""}](${element.url ?? ""})`;
     case "heading-one":
       return `# ${childrenText}`;
     case "heading-two":
@@ -105,6 +107,7 @@ export const deserializeFromMarkdown = (markdown?: string): Descendant[] => {
 
   while (i < lines.length) {
     const line = lines[i];
+    const trimmedLine = line.trim();
 
     // Code block
     if (line.startsWith("```")) {
@@ -138,6 +141,19 @@ export const deserializeFromMarkdown = (markdown?: string): Descendant[] => {
       nodes.push({
         type: typeMap[level] || "heading-one",
         children: parseInlineMarkdown(text) as unknown as Descendant[],
+      });
+      i++;
+      continue;
+    }
+
+    // Image
+    const imageMatch = trimmedLine.match(/^!\[(.*?)\]\((.+?)\)$/);
+    if (imageMatch) {
+      nodes.push({
+        type: "image",
+        url: imageMatch[2],
+        alt: imageMatch[1],
+        children: [{ text: "" }] as unknown as Descendant[],
       });
       i++;
       continue;

@@ -1,11 +1,11 @@
 import type { MouseEventHandler, ReactNode } from "react";
 import React, { useCallback, useMemo, useState } from "react";
 
-import type { Editor } from "slate";
 import { useSlate } from "slate-react";
 import {
   Bold,
   Highlighter,
+  Image,
   Italic,
   List,
   ListOrdered,
@@ -33,6 +33,7 @@ import {
 import type {
   BuiltinToolbarItem,
   MarkdownBlockType,
+  MarkdownEditorType,
   MarkdownTextMark,
   ToolbarItemConfig,
   ToolbarRenderContext,
@@ -84,7 +85,7 @@ export const MarkButton: React.FC<MarkButtonProps> = ({
   label,
   disabled,
 }) => {
-  const editor = useSlate() as Editor;
+  const editor = useSlate() as MarkdownEditorType;
   const isActive = isMarkActive(editor, format);
 
   const handleMouseDown: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -119,7 +120,7 @@ export const BlockButton: React.FC<BlockButtonProps> = ({
   label,
   disabled,
 }) => {
-  const editor = useSlate() as Editor;
+  const editor = useSlate() as MarkdownEditorType;
   const isActive = isBlockActive(editor, format);
 
   const handleMouseDown: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -148,7 +149,7 @@ interface HeadingDropdownProps {
 export const HeadingDropdown: React.FC<HeadingDropdownProps> = ({
   disabled,
 }) => {
-  const editor = useSlate() as Editor;
+  const editor = useSlate() as MarkdownEditorType;
   const [open, setOpen] = useState(false);
 
   const currentKey = useMemo(() => {
@@ -199,7 +200,7 @@ export const HistoryButton: React.FC<HistoryButtonProps> = ({
   type,
   disabled,
 }) => {
-  const editor = useSlate() as Editor;
+  const editor = useSlate() as MarkdownEditorType;
   const label = type === "undo" ? "撤销" : "重做";
 
   const handleMouseDown: MouseEventHandler<HTMLButtonElement> = useCallback(
@@ -246,6 +247,7 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
       bold: "加粗",
       italic: "斜体",
       highlight: "高亮",
+      image: "插入图片",
       orderedList: "有序列表",
       unorderedList: "无序列表",
       blockquote: "引用",
@@ -290,6 +292,19 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
               icon={<Highlighter className="h-4 w-4" />}
               label={toolbarText.highlight}
               disabled={disabled}
+            />
+          );
+        case "image":
+          return (
+            <ToolbarButton
+              key="image"
+              icon={<Image className="h-4 w-4" />}
+              label={toolbarText.image}
+              disabled={disabled || !context.onRequestImageUpload}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                context.onRequestImageUpload?.();
+              }}
             />
           );
         case "orderedList":
