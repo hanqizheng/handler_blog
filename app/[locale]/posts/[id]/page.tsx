@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { posts } from "@/db/schema";
+import { CommentSection } from "@/components/comment-section";
 import { Link } from "@/i18n/navigation";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 function parseId(rawId: string) {
   const id = Number(rawId);
@@ -41,9 +43,12 @@ export default async function PostDetailPage({
   }
 
   return (
-    <main>
-      <h1>{item.title}</h1>
-      <pre>{item.content}</pre>
+    <main className="mx-auto w-full max-w-3xl px-6 py-10">
+      <h1 className="mb-8 text-3xl font-semibold tracking-tight">
+        {item.title}
+      </h1>
+      <MarkdownRenderer content={item.content} />
+      <CommentSection postId={item.id} />
       <p>
         <Link href="/">返回首页</Link>
       </p>
