@@ -20,7 +20,7 @@ export default async function AdminPostsPage() {
   const items = await db.select().from(posts).orderBy(desc(posts.id));
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+    <section className="mx-auto max-w-6xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">文章管理</h1>
         <Button asChild>
@@ -67,9 +67,6 @@ export default async function AdminPostsPage() {
           </Table>
         </CardContent>
       </Card>
-      <Button asChild variant="ghost">
-        <Link href="/admin">返回后台首页</Link>
-      </Button>
-    </main>
+    </section>
   );
 }

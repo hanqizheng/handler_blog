@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import type { MarkdownEditorRef } from "@/components/MarkdownEditor";
+import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 
 type EditorMode = "create" | "edit";
 
@@ -21,23 +23,60 @@ interface PostEditorFormProps {
   mode: EditorMode;
   initialTitle?: string;
   initialContent?: string;
+  initialAssetFolder?: string;
   postId?: number;
 }
+
+const buildPostFolderName = (title: string) => {
+  const trimmed = title.trim();
+  if (!trimmed) return "untitled";
+
+  const asciiSlug = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-_]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (asciiSlug) {
+    return asciiSlug;
+  }
+
+  const encoded = encodeURIComponent(trimmed).replace(/%2F/gi, "-");
+  return encoded || "post";
+};
 
 export function PostEditorForm({
   mode,
   initialTitle = "",
   initialContent = "",
+  initialAssetFolder,
   postId,
 }: PostEditorFormProps) {
   const router = useRouter();
+  const editorRef = useRef<MarkdownEditorRef | null>(null);
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
+  const [assetFolder] = useState(() => {
+    if (mode === "edit") {
+      return initialAssetFolder?.trim() || buildPostFolderName(initialTitle);
+    }
+    return `${Date.now()}`;
+  });
 
   const description = useMemo(() => {
     return mode === "create" ? "创建新的博客文章" : "编辑现有博客文章";
   }, [mode]);
+
+  const imagePathPrefix = useMemo(() => {
+    return `posts/${assetFolder}`;
+  }, [assetFolder]);
+
+  const { uploadFile } = useQiniuUpload({
+    allowedTypes: ["image/*"],
+    pathPrefix: imagePathPrefix,
+  });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,7 +90,26 @@ export function PostEditorForm({
 
     setIsSaving(true);
 
+    let resolvedContent = trimmedContent;
+    const pendingImages = editorRef.current?.getPendingImages() ?? [];
+    const uploadsToHandle = pendingImages.filter(({ url }) =>
+      resolvedContent.includes(url),
+    );
+
     try {
+      for (const pending of uploadsToHandle) {
+        const result = await uploadFile(pending.file);
+        resolvedContent = resolvedContent
+          .split(pending.url)
+          .join(result.url);
+      }
+      if (uploadsToHandle.length > 0) {
+        editorRef.current?.removePendingImages(
+          uploadsToHandle.map((item) => item.url),
+        );
+        setContent(resolvedContent);
+      }
+
       const response = await fetch(
         mode === "create" ? "/api/posts" : `/api/posts/${postId}`,
         {
@@ -59,7 +117,8 @@ export function PostEditorForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             title: trimmedTitle,
-            content: trimmedContent,
+            content: resolvedContent,
+            assetFolder,
           }),
         },
       );
@@ -72,7 +131,9 @@ export function PostEditorForm({
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("保存失败，请稍后再试");
+      alert(
+        error instanceof Error ? error.message : "保存失败，请稍后再试",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -97,7 +158,12 @@ export function PostEditorForm({
           </div>
           <div className="space-y-2">
             <Label>内容</Label>
-            <MarkdownEditor value={content} onChange={setContent} />
+            <MarkdownEditor
+              ref={editorRef}
+              value={content}
+              onChange={setContent}
+              imageUpload={{ deferUpload: true }}
+            />
           </div>
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={isSaving}>
