@@ -1,13 +1,40 @@
 "use client";
 
-import { Link, usePathname } from "@/i18n/navigation";
+import type { ComponentProps } from "react";
+import {
+  CameraIcon,
+  FileIcon,
+  FileTextIcon,
+  LayoutDashboardIcon,
+  ListIcon,
+  SettingsIcon,
+} from "lucide-react";
+
 import { LOCALES } from "@/constants/i18n";
-import { cn } from "@/lib/utils";
+import { Link, usePathname } from "@/i18n/navigation";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+
+import { AdminUserMenu } from "./AdminUserMenu";
 
 const MENU_ITEMS = [
-  { href: "/admin", label: "概览" },
-  { href: "/admin/posts", label: "文章管理" },
-  { href: "/admin/comments", label: "评论管理" },
+  { href: "/admin", label: "概览", icon: LayoutDashboardIcon },
+  { href: "/admin/posts", label: "文章管理", icon: FileTextIcon },
+  { href: "/admin/comments", label: "评论管理", icon: ListIcon },
+  { href: "/admin/banners", label: "Banner 管理", icon: FileIcon },
+  { href: "/admin/albums", label: "相册管理", icon: CameraIcon },
+  { href: "/admin/security", label: "安全设置", icon: SettingsIcon },
 ];
 
 function normalizePathname(pathname: string) {
@@ -30,38 +57,64 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminSidebar() {
+export function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
   const pathname = normalizePathname(usePathname() ?? "/");
 
   return (
-    <aside className="flex w-full flex-col border-b border-slate-800 bg-slate-900 text-slate-200 md:w-64 md:border-b-0 md:border-r">
-      <div className="px-6 py-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-          admin
-        </p>
-        <p className="text-lg font-semibold text-white">后台管理</p>
-      </div>
-      <nav className="flex flex-row gap-2 overflow-x-auto px-4 pb-4 md:flex-col md:px-3 md:pb-6">
-        {MENU_ITEMS.map((item) => {
-          const isActive = isActivePath(pathname, item.href);
+    <AdminSidebarContent pathname={pathname} {...props} />
+  );
+}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition",
-                isActive
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-300 hover:bg-slate-800/70 hover:text-white",
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+function AdminSidebarContent({
+  pathname,
+  ...props
+}: { pathname: string } & ComponentProps<typeof Sidebar>) {
+  return (
+    <Sidebar collapsible="offcanvas" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="后台管理">
+              <Link href="/admin">
+                <LayoutDashboardIcon />
+                <span className="text-sm font-semibold">后台管理</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>管理</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {MENU_ITEMS.map((item) => {
+                const isActive = isActivePath(pathname, item.href);
+                const Icon = item.icon;
+
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href} aria-current={isActive ? "page" : undefined}>
+                        <Icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarSeparator />
+      <SidebarFooter>
+        <AdminUserMenu />
+      </SidebarFooter>
+    </Sidebar>
   );
 }

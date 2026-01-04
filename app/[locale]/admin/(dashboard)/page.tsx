@@ -31,6 +31,27 @@ export default function AdminHomePage() {
               <span>评论管理</span>
               <span className="text-xs text-slate-400">进入</span>
             </Link>
+            <Link
+              href="/admin/banners"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>Banner 管理</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
+            <Link
+              href="/admin/albums"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>相册管理</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
+            <Link
+              href="/admin/security"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>安全设置</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
           </CardContent>
         </Card>
         <Card>

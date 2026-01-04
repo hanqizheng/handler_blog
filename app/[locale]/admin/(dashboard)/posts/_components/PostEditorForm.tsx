@@ -88,6 +88,11 @@ export function PostEditorForm({
       return;
     }
 
+    if (mode === "edit" && !postId) {
+      alert("无法获取文章 ID");
+      return;
+    }
+
     setIsSaving(true);
 
     let resolvedContent = trimmedContent;
@@ -124,7 +129,16 @@ export function PostEditorForm({
       );
 
       if (!response.ok) {
-        throw new Error("保存失败");
+        let message = "保存失败";
+        try {
+          const data = (await response.json()) as { error?: string };
+          if (data?.error) {
+            message = data.error;
+          }
+        } catch {
+          // Ignore parse errors and fall back to default message.
+        }
+        throw new Error(message);
       }
 
       router.push("/admin/posts");
