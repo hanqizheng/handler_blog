@@ -2,6 +2,7 @@ import { desc } from "drizzle-orm";
 
 import { db } from "@/db";
 import { posts } from "@/db/schema";
+import { getAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -11,6 +12,14 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json(
+      { ok: false, error: "unauthorized" },
+      { status: 401 },
+    );
+  }
+
   let payload: unknown = null;
 
   try {

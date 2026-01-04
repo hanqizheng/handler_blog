@@ -1,14 +1,10 @@
 const DEFAULT_PROXY_DOMAIN = "/qiniu";
 
 const PUBLIC_PROXY_DOMAIN =
-  process.env.NEXT_PUBLIC_QINIU_DISPLAY_DOMAIN ||
-  process.env.QINIU_DISPLAY_DOMAIN ||
-  DEFAULT_PROXY_DOMAIN;
+  process.env.NEXT_PUBLIC_QINIU_DISPLAY_DOMAIN || DEFAULT_PROXY_DOMAIN;
 
 const PUBLIC_SOURCE_DOMAIN =
-  process.env.NEXT_PUBLIC_QINIU_SOURCE_DOMAIN ||
-  process.env.QINIU_SOURCE_DOMAIN ||
-  "";
+  process.env.NEXT_PUBLIC_QINIU_SOURCE_DOMAIN || "";
 
 const normalizeBase = (url: string) => url.replace(/\/+$/g, "");
 
