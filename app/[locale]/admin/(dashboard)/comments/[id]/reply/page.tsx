@@ -26,7 +26,7 @@ export default async function AdminReplyCommentPage({
 
   if (!id) {
     return (
-      <section className="mx-auto max-w-4xl space-y-6">
+      <section className="flex w-full flex-1 flex-col gap-6">
         <p>评论不存在</p>
         <Button asChild variant="ghost">
           <Link href="/admin/comments">返回评论列表</Link>
@@ -49,7 +49,7 @@ export default async function AdminReplyCommentPage({
 
   if (!item) {
     return (
-      <section className="mx-auto max-w-4xl space-y-6">
+      <section className="flex w-full flex-1 flex-col gap-6">
         <p>评论不存在</p>
         <Button asChild variant="ghost">
           <Link href="/admin/comments">返回评论列表</Link>
@@ -60,7 +60,7 @@ export default async function AdminReplyCommentPage({
 
   if (item.parentId) {
     return (
-      <section className="mx-auto max-w-4xl space-y-6">
+      <section className="flex w-full flex-1 flex-col gap-6">
         <p>暂不支持回复二级评论</p>
         <Button asChild variant="ghost">
           <Link href="/admin/comments">返回评论列表</Link>
@@ -70,7 +70,7 @@ export default async function AdminReplyCommentPage({
   }
 
   return (
-    <section className="mx-auto max-w-4xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle>回复对象</CardTitle>

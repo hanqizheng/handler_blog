@@ -14,7 +14,7 @@ export default async function AdminAlbumsPage() {
     .orderBy(desc(photoAlbums.createdAt), desc(photoAlbums.id));
 
   return (
-    <section className="mx-auto max-w-6xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">相册管理</h1>
         <p className="text-sm text-slate-500">

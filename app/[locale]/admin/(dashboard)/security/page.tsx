@@ -114,7 +114,7 @@ export default function AdminSecurityPage() {
   };
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">安全设置</h1>
         <p className="text-sm text-slate-500">

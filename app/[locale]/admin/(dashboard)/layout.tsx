@@ -13,7 +13,7 @@ export default function AdminLayout({
       <AdminSidebar variant="inset" />
       <SidebarInset className="min-w-0">
         <AdminHeader />
-        <main className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
           {children}
         </main>
       </SidebarInset>

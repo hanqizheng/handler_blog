@@ -20,7 +20,7 @@ export default async function AdminPostsPage() {
   const items = await db.select().from(posts).orderBy(desc(posts.id));
 
   return (
-    <section className="mx-auto max-w-6xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">文章管理</h1>
         <Button asChild>

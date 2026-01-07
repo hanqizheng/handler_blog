@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 
 export default function AdminHomePage() {
   return (
-    <section className="mx-auto max-w-6xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <div>
         <p className="text-sm text-slate-500">概览</p>
         <h1 className="text-2xl font-semibold text-slate-900">后台管理</h1>

@@ -25,7 +25,7 @@ export default async function AdminEditPostPage({
 
   if (!id) {
     return (
-      <section className="mx-auto max-w-4xl space-y-6">
+      <section className="flex w-full flex-1 flex-col gap-6">
         <p>文章不存在</p>
         <Button asChild variant="ghost">
           <Link href="/admin/posts">返回文章列表</Link>
@@ -38,7 +38,7 @@ export default async function AdminEditPostPage({
 
   if (!item) {
     return (
-      <section className="mx-auto max-w-4xl space-y-6">
+      <section className="flex w-full flex-1 flex-col gap-6">
         <p>文章不存在</p>
         <Button asChild variant="ghost">
           <Link href="/admin/posts">返回文章列表</Link>
@@ -48,7 +48,7 @@ export default async function AdminEditPostPage({
   }
 
   return (
-    <section className="mx-auto max-w-4xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <PostEditorForm
         mode="edit"
         postId={item.id}

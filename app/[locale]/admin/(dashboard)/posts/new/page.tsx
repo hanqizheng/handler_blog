@@ -4,7 +4,7 @@ import { Link } from "@/i18n/navigation";
 
 export default function AdminNewPostPage() {
   return (
-    <section className="mx-auto max-w-4xl space-y-6">
+    <section className="flex w-full flex-1 flex-col gap-6">
       <PostEditorForm mode="create" />
       <Button asChild variant="ghost">
         <Link href="/admin/posts">返回文章列表</Link>
