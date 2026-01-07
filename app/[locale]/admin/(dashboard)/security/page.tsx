@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getImageUrl } from "@/utils/image";
 
 type TotpState =
   | { status: "loading" }
@@ -140,7 +141,7 @@ export default function AdminSecurityPage() {
                 <p>1. 使用验证器应用扫码绑定：</p>
                 {qrCode ? (
                   <img
-                    src={qrCode}
+                    src={getImageUrl(qrCode)}
                     alt="TOTP QR Code"
                     className="h-48 w-48 rounded border border-slate-200 bg-white p-2"
                   />

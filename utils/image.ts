@@ -19,12 +19,6 @@ const getProxyBase = () => {
   return normalizeBase(PUBLIC_PROXY_DOMAIN);
 };
 
-const getSourceBase = () => {
-  if (!PUBLIC_SOURCE_DOMAIN) return "";
-  const trimmed = normalizeBase(PUBLIC_SOURCE_DOMAIN);
-  return isAbsoluteUrl(trimmed) ? trimmed : "";
-};
-
 const getKnownQiniuHosts = () => {
   const hosts = new Set<string>();
 
@@ -68,12 +62,15 @@ export const getImageUrl = (input: string | undefined | null): string => {
   if (isLocalBlobUrl(input)) return input;
 
   const proxyBase = getProxyBase();
-  const sourceBase = getSourceBase();
   const knownHosts = getKnownQiniuHosts();
   const proxyPath =
     proxyBase.startsWith("/") && !isAbsoluteUrl(proxyBase)
       ? proxyBase
       : DEFAULT_PROXY_DOMAIN;
+  const resolvedProxyBase =
+    proxyBase.startsWith("/") && !isAbsoluteUrl(proxyBase)
+      ? proxyPath
+      : proxyBase;
 
   if (isAbsoluteUrl(input)) {
     try {
@@ -81,32 +78,23 @@ export const getImageUrl = (input: string | undefined | null): string => {
         return input;
       }
       const url = new URL(input);
-      if (sourceBase) {
-        return input;
+      if (!isQiniuHost(url.hostname, knownHosts)) {
+        return mapToProxyUrl(url, resolvedProxyBase);
       }
-      if (isQiniuHost(url.hostname, knownHosts)) {
-        return mapToProxyUrl(url, proxyBase);
-      }
+      return mapToProxyUrl(url, resolvedProxyBase);
     } catch {
       return input;
     }
-
-    return input;
   }
 
   if (input.startsWith("/")) {
     if (input === proxyPath || input.startsWith(`${proxyPath}/`)) {
-      if (sourceBase) {
-        const normalized = normalizePathSegment(input.slice(proxyPath.length));
-        return normalized ? `${sourceBase}/${normalized}` : sourceBase;
-      }
       return input;
     }
+    const normalized = normalizePathSegment(input);
+    return normalized ? `${resolvedProxyBase}/${normalized}` : resolvedProxyBase;
   }
 
   const normalized = normalizePathSegment(input);
-  if (sourceBase) {
-    return `${sourceBase}/${normalized}`;
-  }
-  return `${proxyBase}/${normalized}`;
+  return `${resolvedProxyBase}/${normalized}`;
 };

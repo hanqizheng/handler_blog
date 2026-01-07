@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
+import { getImageUrl } from "@/utils/image";
 
 type AlbumPhoto = {
   id: number;
@@ -135,7 +136,7 @@ export function AlbumPhotoManager({
                   className="space-y-2 rounded-lg border border-slate-200 p-2"
                 >
                   <img
-                    src={item.imageUrl}
+                    src={getImageUrl(item.imageUrl)}
                     alt="album"
                     className="h-40 w-full rounded object-cover"
                   />
