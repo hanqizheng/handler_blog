@@ -3,6 +3,7 @@ import { asc, desc, eq } from "drizzle-orm";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/db";
 import { banners, posts } from "@/db/schema";
+import { getImageUrl } from "@/utils/image";
 
 export default async function HomePage() {
   const items = await db.select().from(posts).orderBy(desc(posts.id)).limit(20);
@@ -25,18 +26,32 @@ export default async function HomePage() {
                 {banner.linkUrl ? (
                   <a href={banner.linkUrl}>
                     <img
-                      src={banner.imageUrl}
+                      src={getImageUrl(banner.imageUrl)}
                       alt="banner"
                       className="h-48 w-full rounded object-cover"
                     />
                   </a>
                 ) : (
                   <img
-                    src={banner.imageUrl}
+                    src={getImageUrl(banner.imageUrl)}
                     alt="banner"
                     className="h-48 w-full rounded object-cover"
                   />
                 )}
+                {banner.mainTitle || banner.subTitle ? (
+                  <div className="mt-2 space-y-1">
+                    {banner.mainTitle ? (
+                      <h3 className="text-lg font-semibold">
+                        {banner.mainTitle}
+                      </h3>
+                    ) : null}
+                    {banner.subTitle ? (
+                      <p className="text-sm text-slate-600">
+                        {banner.subTitle}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>

@@ -12,6 +12,8 @@ export const banners = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     imageUrl: varchar("image_url", { length: 512 }).notNull(),
     linkUrl: varchar("link_url", { length: 512 }).notNull().default(""),
+    mainTitle: varchar("main_title", { length: 255 }).notNull().default(""),
+    subTitle: varchar("sub_title", { length: 255 }).notNull().default(""),
     sortOrder: int("sort_order").notNull().default(0),
     isActive: int("is_active").notNull().default(1),
     createdAt: timestamp("created_at").notNull().defaultNow(),

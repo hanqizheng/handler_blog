@@ -42,6 +42,8 @@ export async function PUT(
 
   const data = payload as {
     linkUrl?: unknown;
+    mainTitle?: unknown;
+    subTitle?: unknown;
     sortOrder?: unknown;
     isActive?: unknown;
   };
@@ -49,6 +51,10 @@ export async function PUT(
   const linkUrlRaw = data?.linkUrl;
   const linkUrl =
     typeof linkUrlRaw === "string" ? linkUrlRaw.trim() : undefined;
+  const mainTitle =
+    typeof data?.mainTitle === "string" ? data.mainTitle.trim() : undefined;
+  const subTitle =
+    typeof data?.subTitle === "string" ? data.subTitle.trim() : undefined;
   const sortOrder =
     typeof data?.sortOrder === "number"
       ? data.sortOrder
@@ -66,6 +72,8 @@ export async function PUT(
     .update(banners)
     .set({
       ...(linkUrl !== undefined ? { linkUrl } : {}),
+      ...(mainTitle !== undefined ? { mainTitle } : {}),
+      ...(subTitle !== undefined ? { subTitle } : {}),
       ...(sortOrder === null ? {} : { sortOrder }),
       ...(isActive === null ? {} : { isActive: isActive ? 1 : 0 }),
     })

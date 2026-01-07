@@ -43,6 +43,8 @@ export async function POST(request: Request) {
   const data = payload as {
     imageUrl?: unknown;
     linkUrl?: unknown;
+    mainTitle?: unknown;
+    subTitle?: unknown;
     sortOrder?: unknown;
     isActive?: unknown;
   };
@@ -51,6 +53,10 @@ export async function POST(request: Request) {
     typeof data?.imageUrl === "string" ? data.imageUrl.trim() : "";
   const linkUrl =
     typeof data?.linkUrl === "string" ? data.linkUrl.trim() : "";
+  const mainTitle =
+    typeof data?.mainTitle === "string" ? data.mainTitle.trim() : "";
+  const subTitle =
+    typeof data?.subTitle === "string" ? data.subTitle.trim() : "";
   const sortOrder =
     typeof data?.sortOrder === "number"
       ? data.sortOrder
@@ -70,6 +76,8 @@ export async function POST(request: Request) {
   await db.insert(banners).values({
     imageUrl,
     linkUrl,
+    mainTitle,
+    subTitle,
     sortOrder,
     isActive: isActive ? 1 : 0,
   });
