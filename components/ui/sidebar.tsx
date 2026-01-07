@@ -222,6 +222,31 @@ const Sidebar = React.forwardRef<
       )
     }
 
+    if (variant === "inset") {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            "group peer hidden h-svh w-[--sidebar-width] shrink-0 overflow-hidden text-sidebar-foreground transition-[width] duration-200 ease-linear md:flex",
+            "data-[collapsible=offcanvas]:w-0 data-[collapsible=icon]:w-[--sidebar-width-icon]",
+            className
+          )}
+          data-state={state}
+          data-collapsible={state === "collapsed" ? collapsible : ""}
+          data-variant={variant}
+          data-side={side}
+          {...props}
+        >
+          <div
+            data-sidebar="sidebar"
+            className="flex h-full w-full flex-col bg-sidebar"
+          >
+            {children}
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div
         ref={ref}
