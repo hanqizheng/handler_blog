@@ -1,0 +1,1 @@
+-- Schema is managed by Drizzle migrations.
