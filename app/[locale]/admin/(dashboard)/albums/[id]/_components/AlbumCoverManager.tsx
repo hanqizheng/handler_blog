@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { QiniuImage } from "@/components/qiniu-image";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
-import { getImageUrl } from "@/utils/image";
 
 interface AlbumCoverManagerProps {
   albumId: number;
@@ -34,9 +34,10 @@ export function AlbumCoverManager({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ coverUrl: nextCoverUrl }),
     });
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; error?: string }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!response.ok || !data?.ok) {
       throw new Error(data?.error || "更新失败");
     }
@@ -75,6 +76,8 @@ export function AlbumCoverManager({
     }
   };
 
+  console.log("currentCover: ", currentCover);
+
   return (
     <Card>
       <CardHeader>
@@ -82,8 +85,8 @@ export function AlbumCoverManager({
       </CardHeader>
       <CardContent className="space-y-4">
         {currentCover ? (
-          <img
-            src={getImageUrl(currentCover)}
+          <QiniuImage
+            src={currentCover}
             alt="album cover"
             className="h-48 w-full rounded-lg object-cover"
           />

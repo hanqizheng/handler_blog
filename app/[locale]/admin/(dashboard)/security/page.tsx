@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 type TotpState =
   | { status: "loading" }
@@ -22,14 +22,12 @@ export default function AdminSecurityPage() {
 
   const loadTotp = async () => {
     const response = await fetch("/api/admin/auth/totp-setup");
-    const data = (await response.json().catch(() => null)) as
-      | {
-          ok?: boolean;
-          enabled?: boolean;
-          secret?: string;
-          otpauth?: string;
-        }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      enabled?: boolean;
+      secret?: string;
+      otpauth?: string;
+    } | null;
     if (!response.ok || !data?.ok) {
       setTotpState({ status: "enabled" });
       return;
@@ -78,9 +76,10 @@ export default function AdminSecurityPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ secret: totpState.secret, token }),
       });
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "启用失败");
       }
@@ -99,9 +98,10 @@ export default function AdminSecurityPage() {
       const response = await fetch("/api/admin/auth/totp-setup", {
         method: "DELETE",
       });
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "停用失败");
       }
@@ -131,7 +131,11 @@ export default function AdminSecurityPage() {
           ) : totpState.status === "enabled" ? (
             <div className="space-y-3">
               <p>当前已启用 TOTP 二次验证。</p>
-              <Button variant="outline" onClick={handleDisable} disabled={isSubmitting}>
+              <Button
+                variant="outline"
+                onClick={handleDisable}
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "处理中..." : "停用 TOTP"}
               </Button>
             </div>
@@ -140,8 +144,8 @@ export default function AdminSecurityPage() {
               <div className="space-y-2">
                 <p>1. 使用验证器应用扫码绑定：</p>
                 {qrCode ? (
-                  <img
-                    src={getImageUrl(qrCode)}
+                  <QiniuImage
+                    src={qrCode}
                     alt="TOTP QR Code"
                     className="h-48 w-48 rounded border border-slate-200 bg-white p-2"
                   />

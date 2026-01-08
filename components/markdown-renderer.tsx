@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { remarkHighlight } from "@/utils/remark-highlight";
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 type MarkdownRendererProps = {
   content: string;
@@ -19,13 +19,10 @@ export function MarkdownRenderer({
       remarkPlugins={[remarkGfm, remarkHighlight]}
       className={classes}
       components={{
-        img: ({ src, alt, ...props }) => (
-          <img
-            src={getImageUrl(src)}
-            alt={alt ?? ""}
-            {...props}
-          />
-        ),
+        img: ({ src, alt, ...props }) => {
+          const safeSrc = typeof src === "string" ? src : undefined;
+          return <QiniuImage src={safeSrc} alt={alt ?? ""} {...props} />;
+        },
       }}
     >
       {content}

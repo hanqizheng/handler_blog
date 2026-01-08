@@ -3,7 +3,7 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db";
 import { photoAlbums } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 export default async function AlbumsPage() {
   const items = await db
@@ -25,8 +25,8 @@ export default async function AlbumsPage() {
                 className="block overflow-hidden rounded-lg border border-slate-200 transition hover:border-slate-300 hover:bg-slate-50"
               >
                 {item.coverUrl ? (
-                  <img
-                    src={getImageUrl(item.coverUrl)}
+                  <QiniuImage
+                    src={item.coverUrl}
                     alt={item.name}
                     className="h-44 w-full object-cover"
                   />

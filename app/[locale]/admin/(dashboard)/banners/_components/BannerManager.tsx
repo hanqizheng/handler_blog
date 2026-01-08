@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 type BannerItem = {
   id: number;
@@ -61,9 +61,10 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
 
   const refreshItems = async () => {
     const response = await fetch("/api/admin/banners");
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; items?: BannerItem[] }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      items?: BannerItem[];
+    } | null;
     if (response.ok && data?.ok && data.items) {
       setItems(data.items);
     }
@@ -89,9 +90,10 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
           isActive,
         }),
       });
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "创建失败");
       }
@@ -114,9 +116,10 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
     const response = await fetch(`/api/admin/banners/${id}`, {
       method: "DELETE",
     });
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; error?: string }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!response.ok || !data?.ok) {
       alert(data?.error || "删除失败");
       return;
@@ -130,9 +133,10 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: item.isActive !== 1 }),
     });
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; error?: string }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!response.ok || !data?.ok) {
       alert(data?.error || "更新失败");
       return;
@@ -170,9 +174,10 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
           isActive: editValues.isActive,
         }),
       });
-      const data = (await response.json().catch(() => null)) as
-        | { ok?: boolean; error?: string }
-        | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "更新失败");
       }
@@ -271,7 +276,7 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
                 <TableHead>标题</TableHead>
                 <TableHead>排序</TableHead>
                 <TableHead>状态</TableHead>
-                <TableHead className="w-[200px]">操作</TableHead>
+                <TableHead className="w-50">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -283,8 +288,8 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
                 sortedItems.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
-                      <img
-                        src={getImageUrl(item.imageUrl)}
+                      <QiniuImage
+                        src={item.imageUrl}
                         alt="banner"
                         className="h-14 w-24 rounded object-cover"
                       />
@@ -358,7 +363,7 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
                       </>
                     ) : (
                       <>
-                        <TableCell className="max-w-[240px] truncate">
+                        <TableCell className="max-w-60 truncate">
                           {item.linkUrl || "-"}
                         </TableCell>
                         <TableCell>

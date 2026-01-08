@@ -3,7 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 function parseId(rawId: string) {
   const id = Number(rawId);
@@ -66,8 +66,8 @@ export default async function AlbumDetailPage({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((photo) => (
               <div key={photo.id} className="overflow-hidden rounded-lg">
-                <img
-                  src={getImageUrl(photo.imageUrl)}
+                <QiniuImage
+                  src={photo.imageUrl}
                   alt={album.name}
                   className="h-56 w-full rounded-lg object-cover"
                 />

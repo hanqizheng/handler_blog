@@ -2,7 +2,7 @@ import React from "react";
 
 import type { RenderElementProps, RenderLeafProps } from "slate-react";
 
-import { getImageUrl } from "@/utils/image";
+import { QiniuImage } from "@/components/qiniu-image";
 
 import type { MarkdownElement, MarkdownText } from "./type";
 
@@ -90,8 +90,8 @@ export const Element: React.FC<RenderElementProps> = ({
       return (
         <div className="my-3" {...attributes}>
           <div contentEditable={false}>
-            <img
-              src={getImageUrl(currentElement.url)}
+            <QiniuImage
+              src={currentElement.url}
               alt={currentElement.alt ?? ""}
               className="max-w-full rounded-md border border-slate-200"
             />

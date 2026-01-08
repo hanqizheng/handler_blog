@@ -5,8 +5,19 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { QiniuImage } from "@/components/qiniu-image";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
-import { getImageUrl } from "@/utils/image";
+
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Shanghai",
+});
 
 type AlbumPhoto = {
   id: number;
@@ -20,6 +31,9 @@ interface AlbumPhotoManagerProps {
   albumSlug: string;
   photos: AlbumPhoto[];
 }
+
+const formatPhotoDate = (value: AlbumPhoto["createdAt"]) =>
+  dateFormatter.format(new Date(value));
 
 export function AlbumPhotoManager({
   albumId,
@@ -38,16 +52,18 @@ export function AlbumPhotoManager({
   const sortedItems = useMemo(
     () =>
       [...items].sort(
-        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       ),
     [items],
   );
 
   const refreshItems = async () => {
     const response = await fetch(`/api/admin/albums/${albumId}`);
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; photos?: AlbumPhoto[] }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      photos?: AlbumPhoto[];
+    } | null;
     if (response.ok && data?.ok && data.photos) {
       setItems(data.photos);
     }
@@ -67,9 +83,10 @@ export function AlbumPhotoManager({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageUrl: result.url, imageKey: result.key }),
         });
-        const data = (await response.json().catch(() => null)) as
-          | { ok?: boolean; error?: string }
-          | null;
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+        } | null;
         if (!response.ok || !data?.ok) {
           throw new Error(data?.error || "保存失败");
         }
@@ -89,9 +106,10 @@ export function AlbumPhotoManager({
       `/api/admin/albums/${albumId}/photos/${photo.id}`,
       { method: "DELETE" },
     );
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; error?: string }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
     if (!response.ok || !data?.ok) {
       alert(data?.error || "删除失败");
       return;
@@ -135,15 +153,13 @@ export function AlbumPhotoManager({
                   key={item.id}
                   className="space-y-2 rounded-lg border border-slate-200 p-2"
                 >
-                  <img
-                    src={getImageUrl(item.imageUrl)}
+                  <QiniuImage
+                    src={item.imageUrl}
                     alt="album"
                     className="h-40 w-full rounded object-cover"
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>
-                      {new Date(item.createdAt).toLocaleString()}
-                    </span>
+                    <span>{formatPhotoDate(item.createdAt)}</span>
                     <Button
                       size="sm"
                       variant="outline"
