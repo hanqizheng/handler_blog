@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
 
+import { AlbumCoverManager } from "./_components/AlbumCoverManager";
 import { AlbumPhotoManager } from "./_components/AlbumPhotoManager";
 
 export default async function AdminAlbumDetailPage({
@@ -40,6 +41,11 @@ export default async function AdminAlbumDetailPage({
           上传目录：photo_album/{album.slug}
         </p>
       </div>
+      <AlbumCoverManager
+        albumId={album.id}
+        albumSlug={album.slug}
+        coverUrl={album.coverUrl}
+      />
       <AlbumPhotoManager albumId={album.id} albumSlug={album.slug} photos={photos} />
     </section>
   );

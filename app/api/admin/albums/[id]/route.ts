@@ -73,3 +73,40 @@ export async function DELETE(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const session = await getAdminSession();
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, error: "unauthorized" },
+      { status: 401 },
+    );
+  }
+
+  const { id: rawId } = await context.params;
+  const id = parseId(rawId);
+  if (!id) {
+    return NextResponse.json({ ok: false, error: "invalid id" }, { status: 400 });
+  }
+
+  let payload: unknown = null;
+  try {
+    payload = await request.json();
+  } catch {
+    payload = null;
+  }
+
+  const data = payload as { coverUrl?: unknown };
+  const coverUrl =
+    typeof data?.coverUrl === "string" ? data.coverUrl.trim() : "";
+
+  await db
+    .update(photoAlbums)
+    .set({ coverUrl: coverUrl || null })
+    .where(eq(photoAlbums.id, id));
+
+  return NextResponse.json({ ok: true });
+}

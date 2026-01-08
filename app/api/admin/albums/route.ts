@@ -53,10 +53,16 @@ export async function POST(request: Request) {
     payload = null;
   }
 
-  const data = payload as { name?: unknown; description?: unknown };
+  const data = payload as {
+    name?: unknown;
+    description?: unknown;
+    coverUrl?: unknown;
+  };
   const name = typeof data?.name === "string" ? data.name.trim() : "";
   const description =
     typeof data?.description === "string" ? data.description.trim() : "";
+  const coverUrl =
+    typeof data?.coverUrl === "string" ? data.coverUrl.trim() : "";
 
   if (!name) {
     return NextResponse.json(
@@ -68,7 +74,12 @@ export async function POST(request: Request) {
   const slugBase = slugify(name) || `${Date.now()}`;
   const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
-  await db.insert(photoAlbums).values({ name, description, slug });
+  await db.insert(photoAlbums).values({
+    name,
+    description,
+    slug,
+    coverUrl: coverUrl || null,
+  });
 
   return NextResponse.json({ ok: true });
 }
