@@ -2,6 +2,8 @@
 
 import { useCallback } from "react";
 
+import { normalizeImageKey } from "@/utils/image";
+
 export const DEFAULT_MAX_FILE_SIZE = 400 * 1024;
 
 export enum UploadStatus {
@@ -163,21 +165,19 @@ const fetchUploadToken = async (key: string) => {
     body: JSON.stringify({ key }),
   });
 
-  const data = (await response.json().catch(() => null)) as
-    | {
-        ok?: boolean;
-        token?: string;
-        uploadDomain?: string;
-        displayDomain?: string;
-        key?: string;
-        expiresAt?: string;
-        issuedAt?: string;
-        timeSource?: string;
-        timeSkewSeconds?: number;
-        timeError?: string;
-        error?: string;
-      }
-    | null;
+  const data = (await response.json().catch(() => null)) as {
+    ok?: boolean;
+    token?: string;
+    uploadDomain?: string;
+    displayDomain?: string;
+    key?: string;
+    expiresAt?: string;
+    issuedAt?: string;
+    timeSource?: string;
+    timeSkewSeconds?: number;
+    timeError?: string;
+    error?: string;
+  } | null;
 
   if (!response.ok || !data?.ok || !data.token || !data.uploadDomain) {
     const message = data?.error || "获取上传凭证失败";
@@ -306,8 +306,12 @@ export const useQiniuUpload = (options: UseQiniuUploadOptions = {}) => {
       }
 
       const key = buildObjectKey(file, pathPrefix);
-      const { token, uploadDomain, displayDomain, key: resolvedKey } =
-        await fetchUploadToken(key);
+      const {
+        token,
+        uploadDomain,
+        displayDomain,
+        key: resolvedKey,
+      } = await fetchUploadToken(key);
 
       const uploadResult = await uploadWithProgress(
         uploadDomain,
@@ -322,8 +326,9 @@ export const useQiniuUpload = (options: UseQiniuUploadOptions = {}) => {
       const url = displayDomain
         ? buildPublicUrl(displayDomain, uploadResult.key)
         : uploadResult.key;
+      const normalizedUrl = normalizeImageKey(url);
 
-      return { key: uploadResult.key, url };
+      return { key: uploadResult.key, url: normalizedUrl };
     },
     [allowedTypes, maxFileSize, maxFileSizeByType, pathPrefix],
   );
@@ -335,9 +340,10 @@ export const useQiniuUpload = (options: UseQiniuUploadOptions = {}) => {
       body: JSON.stringify({ key: keyOrUrl }),
     });
 
-    const data = (await response.json().catch(() => null)) as
-      | { ok?: boolean; error?: string }
-      | null;
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+    } | null;
 
     if (!response.ok || !data?.ok) {
       throw new Error(data?.error || "删除失败");

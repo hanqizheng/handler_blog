@@ -159,7 +159,11 @@ const getFallbackSourceDomain = async () => {
 };
 
 const shouldRetryWithFallback = (error: unknown) => {
-  if (error instanceof Error && error.cause && typeof error.cause === "object") {
+  if (
+    error instanceof Error &&
+    error.cause &&
+    typeof error.cause === "object"
+  ) {
     const { code } = error.cause as { code?: string };
     return code === "ENOTFOUND";
   }
@@ -167,7 +171,11 @@ const shouldRetryWithFallback = (error: unknown) => {
 };
 
 const buildUpstreamErrorResponse = (error: unknown) => {
-  if (error instanceof Error && error.cause && typeof error.cause === "object") {
+  if (
+    error instanceof Error &&
+    error.cause &&
+    typeof error.cause === "object"
+  ) {
     const { code, hostname } = error.cause as {
       code?: string;
       hostname?: string;
@@ -192,9 +200,65 @@ const buildUpstreamErrorResponse = (error: unknown) => {
 
 type RouteContext = { params: Promise<{ path?: string[] | string }> };
 
-export async function GET(request: Request, context: RouteContext) {
-  const { path: rawPath } = await context.params;
-  const path = Array.isArray(rawPath) ? rawPath.join("/") : rawPath ?? "";
+const getRawPathFromRequest = (request: Request) => {
+  const { pathname } = new URL(request.url);
+  if (pathname === "/qiniu") return "";
+  if (pathname.startsWith("/qiniu/")) {
+    return pathname.slice("/qiniu/".length);
+  }
+  return pathname.replace(/^\/+/, "");
+};
+
+const hasPercentEncodedPath = (path: string) => /%[0-9a-f]{2}/i.test(path);
+
+const escapePercentEncodedPath = (path: string) =>
+  path.replace(/%([0-9a-f]{2})/gi, "%25$1");
+
+const buildUpstreamRequest = (
+  request: Request,
+  method: "GET" | "HEAD",
+  domain: string,
+  path: string,
+  search: string,
+) =>
+  fetch(buildTargetUrl(domain, path, search), {
+    method,
+    headers: buildForwardHeaders(request),
+  });
+
+const retryWithEscapedPercent = async (options: {
+  response: Response;
+  request: Request;
+  method: "GET" | "HEAD";
+  domain: string;
+  path: string;
+  search: string;
+}) => {
+  const { response, request, method, domain, path, search } = options;
+  if (response.status !== 404 || !hasPercentEncodedPath(path)) {
+    return response;
+  }
+
+  const escapedPath = escapePercentEncodedPath(path);
+  if (escapedPath === path) {
+    return response;
+  }
+
+  try {
+    return await buildUpstreamRequest(
+      request,
+      method,
+      domain,
+      escapedPath,
+      search,
+    );
+  } catch {
+    return response;
+  }
+};
+
+const handleProxyRequest = async (request: Request, method: "GET" | "HEAD") => {
+  const path = getRawPathFromRequest(request);
 
   if (!path) {
     return Response.json(
@@ -217,27 +281,44 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const requestUrl = new URL(request.url);
-  const targetUrl = buildTargetUrl(sourceDomain, path, requestUrl.search);
+  const search = requestUrl.search;
 
   let upstreamResponse: Response;
   try {
-    upstreamResponse = await fetch(targetUrl, {
-      method: "GET",
-      headers: buildForwardHeaders(request),
+    upstreamResponse = await buildUpstreamRequest(
+      request,
+      method,
+      sourceDomain,
+      path,
+      search,
+    );
+    upstreamResponse = await retryWithEscapedPercent({
+      response: upstreamResponse,
+      request,
+      method,
+      domain: sourceDomain,
+      path,
+      search,
     });
   } catch (error) {
     if (shouldRetryWithFallback(error)) {
       const fallbackDomain = await getFallbackSourceDomain();
       if (fallbackDomain && fallbackDomain !== sourceDomain) {
-        const fallbackUrl = buildTargetUrl(
-          fallbackDomain,
-          path,
-          requestUrl.search,
-        );
         try {
-          upstreamResponse = await fetch(fallbackUrl, {
-            method: "GET",
-            headers: buildForwardHeaders(request),
+          upstreamResponse = await buildUpstreamRequest(
+            request,
+            method,
+            fallbackDomain,
+            path,
+            search,
+          );
+          upstreamResponse = await retryWithEscapedPercent({
+            response: upstreamResponse,
+            request,
+            method,
+            domain: fallbackDomain,
+            path,
+            search,
           });
         } catch {
           return buildUpstreamErrorResponse(error);
@@ -252,76 +333,17 @@ export async function GET(request: Request, context: RouteContext) {
 
   const headers = buildResponseHeaders(upstreamResponse.headers);
 
-  return new Response(upstreamResponse.body, {
+  return new Response(method === "HEAD" ? null : upstreamResponse.body, {
     status: upstreamResponse.status,
     statusText: upstreamResponse.statusText,
     headers,
   });
+};
+
+export async function GET(request: Request, _context: RouteContext) {
+  return handleProxyRequest(request, "GET");
 }
 
-export async function HEAD(request: Request, context: RouteContext) {
-  const { path: rawPath } = await context.params;
-  const path = Array.isArray(rawPath) ? rawPath.join("/") : rawPath ?? "";
-
-  if (!path) {
-    return Response.json(
-      { ok: false, error: "path is required" },
-      { status: 400 },
-    );
-  }
-
-  let sourceDomain: string;
-  try {
-    sourceDomain = getSourceDomain();
-  } catch (error) {
-    return Response.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "配置缺失",
-      },
-      { status: 500 },
-    );
-  }
-
-  const requestUrl = new URL(request.url);
-  const targetUrl = buildTargetUrl(sourceDomain, path, requestUrl.search);
-
-  let upstreamResponse: Response;
-  try {
-    upstreamResponse = await fetch(targetUrl, {
-      method: "HEAD",
-      headers: buildForwardHeaders(request),
-    });
-  } catch (error) {
-    if (shouldRetryWithFallback(error)) {
-      const fallbackDomain = await getFallbackSourceDomain();
-      if (fallbackDomain && fallbackDomain !== sourceDomain) {
-        const fallbackUrl = buildTargetUrl(
-          fallbackDomain,
-          path,
-          requestUrl.search,
-        );
-        try {
-          upstreamResponse = await fetch(fallbackUrl, {
-            method: "HEAD",
-            headers: buildForwardHeaders(request),
-          });
-        } catch {
-          return buildUpstreamErrorResponse(error);
-        }
-      } else {
-        return buildUpstreamErrorResponse(error);
-      }
-    } else {
-      return buildUpstreamErrorResponse(error);
-    }
-  }
-
-  const headers = buildResponseHeaders(upstreamResponse.headers);
-
-  return new Response(null, {
-    status: upstreamResponse.status,
-    statusText: upstreamResponse.statusText,
-    headers,
-  });
+export async function HEAD(request: Request, _context: RouteContext) {
+  return handleProxyRequest(request, "HEAD");
 }

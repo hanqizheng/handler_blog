@@ -3,8 +3,7 @@ const DEFAULT_PROXY_DOMAIN = "/qiniu";
 const PUBLIC_PROXY_DOMAIN =
   process.env.NEXT_PUBLIC_QINIU_DISPLAY_DOMAIN || DEFAULT_PROXY_DOMAIN;
 
-const PUBLIC_SOURCE_DOMAIN =
-  process.env.NEXT_PUBLIC_QINIU_SOURCE_DOMAIN || "";
+const PUBLIC_SOURCE_DOMAIN = process.env.NEXT_PUBLIC_QINIU_SOURCE_DOMAIN || "";
 
 const normalizeBase = (url: string) => url.replace(/\/+$/g, "");
 
@@ -16,7 +15,12 @@ const isLocalBlobUrl = (url: string) => /^blob:|^data:/i.test(url);
 
 const getProxyBase = () => {
   if (!PUBLIC_PROXY_DOMAIN) return DEFAULT_PROXY_DOMAIN;
-  return normalizeBase(PUBLIC_PROXY_DOMAIN);
+  const normalized = normalizeBase(PUBLIC_PROXY_DOMAIN);
+  if (!normalized) return DEFAULT_PROXY_DOMAIN;
+  if (isAbsoluteUrl(normalized) || normalized.startsWith("/")) {
+    return normalized;
+  }
+  return `/${normalized}`;
 };
 
 const getKnownQiniuHosts = () => {
@@ -57,6 +61,49 @@ const mapToProxyUrl = (url: URL, proxyBase: string) => {
   return url.search ? `${target}${url.search}` : target;
 };
 
+const stripBasePath = (path: string, base?: string) => {
+  if (!base) return path;
+  let basePath = base;
+  if (isAbsoluteUrl(base)) {
+    try {
+      basePath = new URL(base).pathname;
+    } catch {
+      basePath = base;
+    }
+  }
+  const normalizedBase = normalizePathSegment(basePath);
+  if (!normalizedBase) return path;
+  if (path === normalizedBase) return "";
+  if (path.startsWith(`${normalizedBase}/`)) {
+    return path.slice(normalizedBase.length + 1);
+  }
+  return path;
+};
+
+export const normalizeImageKey = (input: string | undefined | null): string => {
+  if (!input) return "";
+  if (isLocalBlobUrl(input)) return input;
+
+  const trimmed = input.trim();
+  if (!trimmed) return "";
+
+  let path = "";
+  if (isAbsoluteUrl(trimmed)) {
+    try {
+      path = normalizePathSegment(new URL(trimmed).pathname);
+    } catch {
+      return trimmed.replace(/^\/+/, "");
+    }
+  } else {
+    path = normalizePathSegment(trimmed);
+  }
+
+  const proxyBase = getProxyBase();
+  const withoutProxy = stripBasePath(path, proxyBase);
+  const withoutSource = stripBasePath(withoutProxy, PUBLIC_SOURCE_DOMAIN);
+  return stripBasePath(withoutSource, PUBLIC_PROXY_DOMAIN);
+};
+
 export const getImageUrl = (input: string | undefined | null): string => {
   if (!input) return "";
   if (isLocalBlobUrl(input)) return input;
@@ -92,7 +139,9 @@ export const getImageUrl = (input: string | undefined | null): string => {
       return input;
     }
     const normalized = normalizePathSegment(input);
-    return normalized ? `${resolvedProxyBase}/${normalized}` : resolvedProxyBase;
+    return normalized
+      ? `${resolvedProxyBase}/${normalized}`
+      : resolvedProxyBase;
   }
 
   const normalized = normalizePathSegment(input);
