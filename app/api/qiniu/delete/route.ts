@@ -1,3 +1,4 @@
+import { getAdminSession } from "@/lib/admin-auth";
 import { createBucketManager, getServerQiniuConfig } from "@/lib/qiniu";
 
 export const runtime = "nodejs";
@@ -53,6 +54,11 @@ const extractKeyFromUrl = (input: string, displayDomain?: string) => {
 };
 
 export async function POST(request: Request) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
   let payload: unknown = null;
   try {
     payload = await request.json();
