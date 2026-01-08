@@ -14,6 +14,7 @@ export const photoAlbums = mysqlTable(
     name: varchar("name", { length: 128 }).notNull(),
     slug: varchar("slug", { length: 128 }).notNull(),
     description: text("description"),
+    coverUrl: text("cover_url"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
   },
