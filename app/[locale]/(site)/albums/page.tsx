@@ -12,12 +12,12 @@ export default async function AlbumsPage() {
     .orderBy(desc(photoAlbums.createdAt), desc(photoAlbums.id));
 
   return (
-    <main>
-      <h1>相册列表</h1>
+    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+      <h1 className="text-3xl font-semibold tracking-tight">相册列表</h1>
       {items.length === 0 ? (
-        <p>暂无相册</p>
+        <p className="mt-6 text-sm text-slate-600">暂无相册</p>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <li key={item.id}>
               <Link
