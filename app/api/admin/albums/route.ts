@@ -27,14 +27,12 @@ export async function GET() {
 const slugify = (value: string) => {
   const trimmed = value.trim();
   if (!trimmed) return "";
-  const asciiSlug = trimmed
+  const normalized = trimmed.normalize("NFKD").replace(/[^\x00-\x7f]/g, "");
+  return normalized
     .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-_]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
-  if (asciiSlug) return asciiSlug;
-  return encodeURIComponent(trimmed).replace(/%2F/gi, "-");
 };
 
 export async function POST(request: Request) {
@@ -71,7 +69,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const slugBase = slugify(name) || `${Date.now()}`;
+  const slugBase = slugify(name) || "album";
   const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
 
   await db.insert(photoAlbums).values({
