@@ -1,16 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import {
-  CameraIcon,
-  FileIcon,
-  FileTextIcon,
-  LayoutDashboardIcon,
-  ListIcon,
-  SettingsIcon,
-} from "lucide-react";
-
-import { LOCALES } from "@/constants/i18n";
+import { LayoutDashboardIcon } from "lucide-react";
 import { Link, usePathname } from "@/i18n/navigation";
 import {
   Sidebar,
@@ -27,27 +18,8 @@ import {
 } from "@/components/ui/sidebar";
 
 import { AdminUserMenu } from "./AdminUserMenu";
-
-const MENU_ITEMS = [
-  { href: "/admin", label: "概览", icon: LayoutDashboardIcon },
-  { href: "/admin/posts", label: "文章管理", icon: FileTextIcon },
-  { href: "/admin/comments", label: "评论管理", icon: ListIcon },
-  { href: "/admin/banners", label: "Banner 管理", icon: FileIcon },
-  { href: "/admin/albums", label: "相册管理", icon: CameraIcon },
-  { href: "/admin/security", label: "安全设置", icon: SettingsIcon },
-];
-
-function normalizePathname(pathname: string) {
-  const segments = pathname.split("/");
-  const maybeLocale = segments[1];
-
-  if (LOCALES.includes(maybeLocale as (typeof LOCALES)[number])) {
-    const remainder = segments.slice(2).join("/");
-    return `/${remainder}`;
-  }
-
-  return pathname;
-}
+import { ADMIN_NAV_ITEMS } from "./admin-nav";
+import { normalizeAdminPathname } from "./admin-path";
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") {
@@ -58,11 +30,9 @@ function isActivePath(pathname: string, href: string) {
 }
 
 export function AdminSidebar(props: ComponentProps<typeof Sidebar>) {
-  const pathname = normalizePathname(usePathname() ?? "/");
+  const pathname = normalizeAdminPathname(usePathname() ?? "/");
 
-  return (
-    <AdminSidebarContent pathname={pathname} {...props} />
-  );
+  return <AdminSidebarContent pathname={pathname} {...props} />;
 }
 
 function AdminSidebarContent({
@@ -88,7 +58,7 @@ function AdminSidebarContent({
           <SidebarGroupLabel>管理</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {MENU_ITEMS.map((item) => {
+              {ADMIN_NAV_ITEMS.map((item) => {
                 const isActive = isActivePath(pathname, item.href);
                 const Icon = item.icon;
 
@@ -99,7 +69,10 @@ function AdminSidebarContent({
                       isActive={isActive}
                       tooltip={item.label}
                     >
-                      <Link href={item.href} aria-current={isActive ? "page" : undefined}>
+                      <Link
+                        href={item.href}
+                        aria-current={isActive ? "page" : undefined}
+                      >
                         <Icon />
                         <span>{item.label}</span>
                       </Link>
