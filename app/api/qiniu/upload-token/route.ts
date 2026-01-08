@@ -1,5 +1,6 @@
 import crypto from "crypto";
 
+import { getAdminSession } from "@/lib/admin-auth";
 import { generateUploadTokenWithSDK, getServerQiniuConfig } from "@/lib/qiniu";
 
 export const runtime = "nodejs";
@@ -16,6 +17,11 @@ const resolveDisplayDomain = (input: string | undefined) => {
 };
 
 export async function POST(request: Request) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
   let payload: unknown = null;
   try {
     payload = await request.json();
