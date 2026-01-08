@@ -4,3 +4,5 @@ export * from "./admin-users";
 export * from "./banners";
 export * from "./photo-albums";
 export * from "./photo-album-photos";
+export * from "./products";
+export * from "./site-profiles";
