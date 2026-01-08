@@ -1,7 +1,11 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import createMiddleware from "next-intl/middleware";
 
 import { LOCALES } from "@/constants/i18n";
+import { routing } from "@/i18n/routing";
+
+const intlMiddleware = createMiddleware(routing);
 
 const ADMIN_SESSION_COOKIE = "admin-session";
 
@@ -83,7 +87,7 @@ export async function middleware(request: NextRequest) {
   const isAdminPage = normalized.pathname.startsWith("/admin");
   const isAdminApi = normalized.pathname.startsWith("/api/admin");
   if (!isAdminPage && !isAdminApi) {
-    return NextResponse.next();
+    return intlMiddleware(request);
   }
 
   const publicAdminPages = ["/admin/login", "/admin/signup"];
@@ -96,7 +100,7 @@ export async function middleware(request: NextRequest) {
     (isAdminPage && publicAdminPages.includes(normalized.pathname)) ||
     (isAdminApi && publicAdminApis.includes(normalized.pathname))
   ) {
-    return NextResponse.next();
+    return intlMiddleware(request);
   }
 
   const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
@@ -115,7 +119,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const response = NextResponse.next();
+  const response = intlMiddleware(request);
   if (isAdminPage) {
     response.headers.set("Cache-Control", "no-store");
   }
@@ -123,5 +127,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/:locale/admin/:path*"],
+  matcher: [
+    "/((?!api|_next|_vercel|.*\\..*).*)",
+    "/api/admin/:path*",
+  ],
 };
