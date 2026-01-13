@@ -12,12 +12,12 @@ export default async function AlbumsPage() {
     .orderBy(desc(photoAlbums.createdAt), desc(photoAlbums.id));
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+    <main className="mx-auto w-full max-w-6xl px-6 py-10">
       <h1 className="text-3xl font-semibold tracking-tight">相册列表</h1>
       {items.length === 0 ? (
         <p className="mt-6 text-sm text-slate-600">暂无相册</p>
       ) : (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
             <li key={item.id}>
               <Link
@@ -28,15 +28,15 @@ export default async function AlbumsPage() {
                   <QiniuImage
                     src={item.coverUrl}
                     alt={item.name}
-                    className="h-44 w-full object-cover"
+                    className="h-56 w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-44 w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
+                  <div className="flex h-56 w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
                     暂无封面
                   </div>
                 )}
-                <div className="space-y-1 p-4">
-                  <p className="text-base font-semibold">{item.name}</p>
+                <div className="space-y-1 p-5">
+                  <p className="text-lg font-semibold">{item.name}</p>
                   {item.description ? (
                     <p className="text-sm text-slate-600">{item.description}</p>
                   ) : null}
