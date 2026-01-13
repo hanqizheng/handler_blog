@@ -55,6 +55,7 @@ export default async function AdminEditPostPage({
         initialTitle={item.title}
         initialContent={item.content}
         initialAssetFolder={item.assetFolder}
+        initialCoverImageUrl={item.coverImageUrl}
       />
       <Button asChild variant="ghost">
         <Link href="/admin/posts">返回文章列表</Link>
