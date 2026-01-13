@@ -44,12 +44,22 @@ export default async function PostDetailPage({
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10">
-      <h1 className="mb-8 text-3xl font-semibold tracking-tight">
-        {item.title}
-      </h1>
-      <MarkdownRenderer content={item.content} />
+      <div className="space-y-3">
+        <Link href="/posts" className="text-xs text-slate-500">
+          返回文章列表
+        </Link>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+          {item.title}
+        </h1>
+        <p className="text-sm text-slate-500">
+          {new Date(item.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+      <article className="mt-10">
+        <MarkdownRenderer content={item.content} className="text-[15px]" />
+      </article>
       <CommentSection postId={item.id} />
-      <p>
+      <p className="mt-10 text-sm text-slate-600">
         <Link href="/">返回首页</Link>
       </p>
     </main>
