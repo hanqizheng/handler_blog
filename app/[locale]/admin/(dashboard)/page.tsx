@@ -46,6 +46,13 @@ export default function AdminHomePage() {
               <span className="text-xs text-slate-400">进入</span>
             </Link>
             <Link
+              href="/admin/products"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>产品管理</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
+            <Link
               href="/admin/security"
               className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
             >
@@ -61,6 +68,7 @@ export default function AdminHomePage() {
           <CardContent className="space-y-2 text-sm text-slate-600">
             <p>文章管理支持新建、编辑与发布内容。</p>
             <p>评论管理支持审核、回复与处理留言。</p>
+            <p>产品管理用于更新首页产品展示。</p>
           </CardContent>
         </Card>
       </div>
