@@ -59,10 +59,24 @@
       "breakpoints": true
     },
     {
+      "idx": 8,
+      "version": "5",
+      "when": 1767884000000,
+      "tag": "0008_add_comment_captcha_states",
+      "breakpoints": true
+    },
+    {
       "idx": 9,
       "version": "5",
       "when": 1767900000000,
       "tag": "0009_add_post_cover",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1768000000000,
+      "tag": "0010_add_comment_captcha_settings",
       "breakpoints": true
     },
     {
