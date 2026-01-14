@@ -1,6 +1,10 @@
 .DS_Store
 .env.local
 .env.*.local
+.env.production
+
+.deploy/
+.deploy.env
 
 node_modules
 .next
