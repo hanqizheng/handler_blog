@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { commentCaptchaSettings, posts } from "@/db/schema";
 import { CommentSection } from "@/components/comment-section";
 import { Link } from "@/i18n/navigation";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
@@ -32,6 +32,12 @@ export default async function PostDetailPage({
   }
 
   const [item] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+  const [captchaSetting] = await db
+    .select({ isEnabled: commentCaptchaSettings.isEnabled })
+    .from(commentCaptchaSettings)
+    .orderBy(desc(commentCaptchaSettings.id))
+    .limit(1);
+  const captchaEnabled = (captchaSetting?.isEnabled ?? 0) === 1;
 
   if (!item) {
     return (
@@ -58,7 +64,7 @@ export default async function PostDetailPage({
       <article className="mt-10">
         <MarkdownRenderer content={item.content} className="text-[15px]" />
       </article>
-      <CommentSection postId={item.id} />
+      <CommentSection postId={item.id} captchaEnabled={captchaEnabled} />
       <p className="mt-10 text-sm text-slate-600">
         <Link href="/">返回首页</Link>
       </p>
