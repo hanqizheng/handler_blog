@@ -24,14 +24,37 @@ fi
 : "${DEPLOY_APP_ROOT:=/root/handler_blog}"
 : "${DEPLOY_APP_PORT:=8283}"
 : "${DEPLOY_KEEP_RELEASES:=5}"
-
-if [ ! -f "$ENV_FILE" ]; then
-  echo "Missing $ENV_FILE."
-  echo "Create it before deploy (this is your production env file)."
-  exit 1
-fi
+: "${DEPLOY_DATABASE_URL:=}"
 
 cd "$ROOT_DIR"
+
+if [ ! -f "$ENV_FILE" ]; then
+  log_step "Creating $ENV_FILE from .env.local"
+  if [ ! -f "$ROOT_DIR/.env.local" ]; then
+    echo "Missing $ENV_FILE and $ROOT_DIR/.env.local."
+    echo "Create one of them before deploy."
+    exit 1
+  fi
+
+  cp "$ROOT_DIR/.env.local" "$ENV_FILE"
+fi
+
+if [ -n "$DEPLOY_DATABASE_URL" ]; then
+  tmp_file="$ENV_FILE.tmp"
+  grep -v "^DATABASE_URL=" "$ENV_FILE" > "$tmp_file" || true
+  printf "DATABASE_URL=%s\n" "$DEPLOY_DATABASE_URL" >> "$tmp_file"
+  mv "$tmp_file" "$ENV_FILE"
+else
+  if ! grep -q "^DATABASE_URL=" "$ENV_FILE"; then
+    tmp_file="$ENV_FILE.tmp"
+    grep -v "^DATABASE_URL=" "$ENV_FILE" > "$tmp_file" || true
+    printf "DATABASE_URL=mysql://handler_blog:CHANGE_ME@127.0.0.1:3308/handler_blog\n" >> "$tmp_file"
+    mv "$tmp_file" "$ENV_FILE"
+    echo "Created $ENV_FILE with a placeholder DATABASE_URL."
+    echo "Please update it and re-run deploy."
+    exit 1
+  fi
+fi
 
 log_step "Preparing local build"
 echo "Project: $DEPLOY_APP_NAME"
@@ -86,7 +109,7 @@ tar -xzf "$ARCHIVE" -C "$RELEASE_DIR"
 rm -f "$ARCHIVE"
 
 cd "$RELEASE_DIR"
-pnpm install --frozen-lockfile
+SKIP_INSTALL_SIMPLE_GIT_HOOKS=1 pnpm install --frozen-lockfile
 
 set -a
 . "$RELEASE_DIR/.env.production"
