@@ -65,8 +65,12 @@ echo "App port: $DEPLOY_APP_PORT"
 log_step "Installing dependencies"
 pnpm install
 
-log_step "Generating Drizzle migrations (local)"
-pnpm db:generate
+if [ "${DEPLOY_RUN_DB_GENERATE:-}" = "1" ]; then
+  log_step "Generating Drizzle migrations (local)"
+  pnpm db:generate
+else
+  log_step "Skipping Drizzle migrations (local)"
+fi
 
 log_step "Building Next.js app"
 pnpm build
