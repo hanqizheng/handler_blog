@@ -456,12 +456,20 @@ export async function POST(request: Request) {
             })
             .where(eq(commentCaptchaStates.id, captchaState.id));
         } else {
-          await db.insert(commentCaptchaStates).values({
-            ipHash,
-            deviceId,
-            triggerCount: nextCount,
-            blockedUntil,
-          });
+          await db
+            .insert(commentCaptchaStates)
+            .values({
+              ipHash,
+              deviceId,
+              triggerCount: nextCount,
+              blockedUntil,
+            })
+            .onDuplicateKeyUpdate({
+              set: {
+                triggerCount: nextCount,
+                blockedUntil,
+              },
+            });
         }
 
         const code = blockedUntil ? "captcha_blocked" : "captcha_invalid";
@@ -485,12 +493,23 @@ export async function POST(request: Request) {
           })
           .where(eq(commentCaptchaStates.id, captchaState.id));
       } else {
-        await db.insert(commentCaptchaStates).values({
-          ipHash,
-          deviceId,
-          triggerCount: 0,
-          verifiedUntil: new Date(now.getTime() + CAPTCHA_VERIFY_TTL_MS),
-        });
+        const verifiedUntil = new Date(now.getTime() + CAPTCHA_VERIFY_TTL_MS);
+        await db
+          .insert(commentCaptchaStates)
+          .values({
+            ipHash,
+            deviceId,
+            triggerCount: 0,
+            verifiedUntil,
+            blockedUntil: null,
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              triggerCount: 0,
+              verifiedUntil,
+              blockedUntil: null,
+            },
+          });
       }
     }
   }
