@@ -1,5 +1,7 @@
 export * from "./posts";
 export * from "./comments";
+export * from "./comment-captcha-states";
+export * from "./comment-captcha-settings";
 export * from "./admin-users";
 export * from "./banners";
 export * from "./photo-albums";

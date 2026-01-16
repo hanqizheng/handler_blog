@@ -14,10 +14,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const session = await getAdminSession();
   if (!session) {
-    return Response.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 },
-    );
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   let payload: unknown = null;
@@ -32,11 +29,14 @@ export async function POST(request: Request) {
     title?: unknown;
     content?: unknown;
     assetFolder?: unknown;
+    coverImageUrl?: unknown;
   };
   const title = typeof data?.title === "string" ? data.title.trim() : "";
   const content = typeof data?.content === "string" ? data.content.trim() : "";
   const assetFolder =
     typeof data?.assetFolder === "string" ? data.assetFolder.trim() : "";
+  const coverImageUrl =
+    typeof data?.coverImageUrl === "string" ? data.coverImageUrl.trim() : "";
 
   if (!title || !content) {
     return Response.json(
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     title,
     content,
     assetFolder: resolvedAssetFolder,
+    coverImageUrl,
   });
 
   return Response.json({ ok: true });

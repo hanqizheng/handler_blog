@@ -7,7 +7,7 @@ declare module "qrcode" {
 
   export function toDataURL(
     text: string,
-    options?: QRCodeToDataURLOptions
+    options?: QRCodeToDataURLOptions,
   ): Promise<string>;
 
   const QRCode: {
@@ -15,4 +15,21 @@ declare module "qrcode" {
   };
 
   export default QRCode;
+}
+
+interface Window {
+  initAliyunCaptcha?: (options: {
+    SceneId: string;
+    prefix: string;
+    mode: "popup";
+    element: string;
+    button: string;
+    captchaVerifyCallback: (
+      captchaVerifyParam: string,
+    ) => Promise<{ captchaResult: boolean; bizResult?: boolean }>;
+    onBizResultCallback?: () => void;
+    getInstance?: (instance: unknown) => void;
+    slideStyle?: { width?: number; height?: number };
+    language?: "cn" | "tw" | "en";
+  }) => void;
 }

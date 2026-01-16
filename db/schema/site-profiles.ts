@@ -11,6 +11,7 @@ export const siteProfiles = mysqlTable("site_profiles", {
   displayName: varchar("display_name", { length: 128 })
     .notNull()
     .default(""),
+  roleTitle: varchar("role_title", { length: 255 }).notNull().default(""),
   bio: text("bio"),
   phone: varchar("phone", { length: 64 }).notNull().default(""),
   email: varchar("email", { length: 255 }).notNull().default(""),

@@ -19,6 +19,8 @@ export default function AdminSecurityPage() {
   const [token, setToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [captchaEnabled, setCaptchaEnabled] = useState<boolean | null>(null);
+  const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
 
   const loadTotp = async () => {
     const response = await fetch("/api/admin/auth/totp-setup");
@@ -43,8 +45,22 @@ export default function AdminSecurityPage() {
     });
   };
 
+  const loadCommentCaptcha = async () => {
+    const response = await fetch("/api/admin/security/comment-captcha");
+    const data = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      enabled?: boolean;
+    } | null;
+    if (!response.ok || !data?.ok) {
+      setCaptchaEnabled(false);
+      return;
+    }
+    setCaptchaEnabled(Boolean(data.enabled));
+  };
+
   useEffect(() => {
     void loadTotp();
+    void loadCommentCaptcha();
   }, []);
 
   useEffect(() => {
@@ -113,6 +129,48 @@ export default function AdminSecurityPage() {
     }
   };
 
+  const handleEnableCaptcha = async () => {
+    setCaptchaSubmitting(true);
+    try {
+      const response = await fetch("/api/admin/security/comment-captcha", {
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "启用失败");
+      }
+      await loadCommentCaptcha();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "启用失败");
+    } finally {
+      setCaptchaSubmitting(false);
+    }
+  };
+
+  const handleDisableCaptcha = async () => {
+    setCaptchaSubmitting(true);
+    try {
+      const response = await fetch("/api/admin/security/comment-captcha", {
+        method: "DELETE",
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "停用失败");
+      }
+      await loadCommentCaptcha();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "停用失败");
+    } finally {
+      setCaptchaSubmitting(false);
+    }
+  };
+
   return (
     <section className="flex w-full flex-1 flex-col gap-6">
       <div>
@@ -170,6 +228,37 @@ export default function AdminSecurityPage() {
               </div>
               <Button onClick={handleEnable} disabled={isSubmitting}>
                 {isSubmitting ? "绑定中..." : "启用 TOTP"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>评论验证码</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm text-slate-600">
+          {captchaEnabled === null ? (
+            <p>加载中...</p>
+          ) : captchaEnabled ? (
+            <div className="space-y-3">
+              <p>当前已启用评论验证码。</p>
+              <Button
+                variant="outline"
+                onClick={handleDisableCaptcha}
+                disabled={captchaSubmitting}
+              >
+                {captchaSubmitting ? "处理中..." : "停用评论验证码"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p>当前未启用评论验证码（默认关闭）。</p>
+              <Button
+                onClick={handleEnableCaptcha}
+                disabled={captchaSubmitting}
+              >
+                {captchaSubmitting ? "处理中..." : "启用评论验证码"}
               </Button>
             </div>
           )}

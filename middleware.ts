@@ -24,8 +24,7 @@ const normalizePathname = (pathname: string) => {
 const base64UrlToUint8Array = (input: string) => {
   const padded = input.replace(/-/g, "+").replace(/_/g, "/");
   const padding = padded.length % 4;
-  const normalized =
-    padding === 0 ? padded : padded + "=".repeat(4 - padding);
+  const normalized = padding === 0 ? padded : padded + "=".repeat(4 - padding);
   const binary = atob(normalized);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
@@ -57,20 +56,17 @@ const verifyAdminToken = async (token: string) => {
 
   const data = textEncoder.encode(`${header}.${payload}`);
   const signatureBytes = base64UrlToUint8Array(signature);
-  const valid = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    signatureBytes,
-    data,
-  );
+  const valid = await crypto.subtle.verify("HMAC", key, signatureBytes, data);
   if (!valid) {
     return null;
   }
 
   const payloadBytes = base64UrlToUint8Array(payload);
-  const decoded = JSON.parse(
-    new TextDecoder().decode(payloadBytes),
-  ) as { sub?: number; email?: string; exp?: number };
+  const decoded = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
+    sub?: number;
+    email?: string;
+    exp?: number;
+  };
   if (!decoded?.sub || !decoded?.email || !decoded?.exp) {
     return null;
   }
@@ -91,15 +87,13 @@ export async function middleware(request: NextRequest) {
   }
 
   const publicAdminPages = ["/admin/login", "/admin/signup"];
-  const publicAdminApis = [
-    "/api/admin/auth/login",
-    "/api/admin/auth/signup",
-  ];
+  const publicAdminApis = ["/api/admin/auth/login", "/api/admin/auth/signup"];
 
-  if (
-    (isAdminPage && publicAdminPages.includes(normalized.pathname)) ||
-    (isAdminApi && publicAdminApis.includes(normalized.pathname))
-  ) {
+  if (isAdminApi && publicAdminApis.includes(normalized.pathname)) {
+    return NextResponse.next();
+  }
+
+  if (isAdminPage && publicAdminPages.includes(normalized.pathname)) {
     return intlMiddleware(request);
   }
 
@@ -119,16 +113,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  const response = intlMiddleware(request);
-  if (isAdminPage) {
-    response.headers.set("Cache-Control", "no-store");
+  if (isAdminApi) {
+    return NextResponse.next();
   }
+
+  const response = intlMiddleware(request);
+  response.headers.set("Cache-Control", "no-store");
   return response;
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next|_vercel|.*\\..*).*)",
-    "/api/admin/:path*",
-  ],
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)", "/api/admin/:path*"],
 };

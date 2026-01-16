@@ -38,10 +38,7 @@ export async function PUT(
 ) {
   const session = await getAdminSession();
   if (!session) {
-    return Response.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 },
-    );
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   const { id: rawId } = await context.params;
@@ -62,11 +59,14 @@ export async function PUT(
     title?: unknown;
     content?: unknown;
     assetFolder?: unknown;
+    coverImageUrl?: unknown;
   };
   const title = typeof data?.title === "string" ? data.title.trim() : "";
   const content = typeof data?.content === "string" ? data.content.trim() : "";
   const assetFolder =
     typeof data?.assetFolder === "string" ? data.assetFolder.trim() : "";
+  const coverImageUrl =
+    typeof data?.coverImageUrl === "string" ? data.coverImageUrl.trim() : "";
 
   if (!title || !content) {
     return Response.json(
@@ -81,6 +81,7 @@ export async function PUT(
       title,
       content,
       ...(assetFolder ? { assetFolder } : {}),
+      coverImageUrl,
     })
     .where(eq(posts.id, id));
 
@@ -93,10 +94,7 @@ export async function DELETE(
 ) {
   const session = await getAdminSession();
   if (!session) {
-    return Response.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 },
-    );
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   const { id: rawId } = await context.params;

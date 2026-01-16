@@ -2,8 +2,8 @@ import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
+import { ImagePreviewGallery } from "@/components/image-preview";
 import { Link } from "@/i18n/navigation";
-import { QiniuImage } from "@/components/qiniu-image";
 
 function parseId(rawId: string) {
   const id = Number(rawId);
@@ -51,8 +51,13 @@ export default async function AlbumDetailPage({
     .where(eq(photoAlbumPhotos.albumId, album.id))
     .orderBy(asc(photoAlbumPhotos.createdAt));
 
+  const images = photos.map((photo) => ({
+    src: photo.imageUrl,
+    alt: album.name,
+  }));
+
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-10">
+    <main className="mx-auto w-full max-w-6xl px-6 py-10">
       <div className="space-y-2">
         <h1 className="text-3xl font-semibold tracking-tight">{album.name}</h1>
         {album.description ? (
@@ -63,17 +68,7 @@ export default async function AlbumDetailPage({
         {photos.length === 0 ? (
           <p>暂无照片</p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {photos.map((photo) => (
-              <div key={photo.id} className="overflow-hidden rounded-lg">
-                <QiniuImage
-                  src={photo.imageUrl}
-                  alt={album.name}
-                  className="h-56 w-full rounded-lg object-cover"
-                />
-              </div>
-            ))}
-          </div>
+          <ImagePreviewGallery images={images} />
         )}
       </section>
       <p className="mt-8">

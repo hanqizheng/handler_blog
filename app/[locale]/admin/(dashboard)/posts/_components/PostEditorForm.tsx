@@ -16,6 +16,7 @@ import {
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import type { MarkdownEditorRef } from "@/components/MarkdownEditor";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
+import { QiniuImage } from "@/components/qiniu-image";
 
 type EditorMode = "create" | "edit";
 
@@ -24,6 +25,7 @@ interface PostEditorFormProps {
   initialTitle?: string;
   initialContent?: string;
   initialAssetFolder?: string;
+  initialCoverImageUrl?: string;
   postId?: number;
 }
 
@@ -51,6 +53,7 @@ export function PostEditorForm({
   initialTitle = "",
   initialContent = "",
   initialAssetFolder,
+  initialCoverImageUrl,
   postId,
 }: PostEditorFormProps) {
   const router = useRouter();
@@ -58,6 +61,10 @@ export function PostEditorForm({
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
   const [isSaving, setIsSaving] = useState(false);
+  const [coverImageUrl, setCoverImageUrl] = useState(
+    initialCoverImageUrl?.trim() || "",
+  );
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [assetFolder] = useState(() => {
     if (mode === "edit") {
       return initialAssetFolder?.trim() || buildPostFolderName(initialTitle);
@@ -96,17 +103,22 @@ export function PostEditorForm({
     setIsSaving(true);
 
     let resolvedContent = trimmedContent;
+    let resolvedCoverImageUrl = coverImageUrl.trim();
     const pendingImages = editorRef.current?.getPendingImages() ?? [];
     const uploadsToHandle = pendingImages.filter(({ url }) =>
       resolvedContent.includes(url),
     );
 
     try {
+      if (coverFile) {
+        const coverUpload = await uploadFile(coverFile);
+        resolvedCoverImageUrl = coverUpload.url;
+        setCoverImageUrl(coverUpload.url);
+        setCoverFile(null);
+      }
       for (const pending of uploadsToHandle) {
         const result = await uploadFile(pending.file);
-        resolvedContent = resolvedContent
-          .split(pending.url)
-          .join(result.url);
+        resolvedContent = resolvedContent.split(pending.url).join(result.url);
       }
       if (uploadsToHandle.length > 0) {
         editorRef.current?.removePendingImages(
@@ -124,6 +136,7 @@ export function PostEditorForm({
             title: trimmedTitle,
             content: resolvedContent,
             assetFolder,
+            coverImageUrl: resolvedCoverImageUrl,
           }),
         },
       );
@@ -145,9 +158,7 @@ export function PostEditorForm({
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert(
-        error instanceof Error ? error.message : "保存失败，请稍后再试",
-      );
+      alert(error instanceof Error ? error.message : "保存失败，请稍后再试");
     } finally {
       setIsSaving(false);
     }
@@ -169,6 +180,40 @@ export function PostEditorForm({
               onChange={(event) => setTitle(event.target.value)}
               placeholder="输入文章标题"
             />
+          </div>
+          <div className="space-y-2">
+            <Label>封面</Label>
+            {coverImageUrl ? (
+              <QiniuImage
+                src={coverImageUrl}
+                alt="post cover"
+                className="h-48 w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-48 w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
+                暂无封面
+              </div>
+            )}
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(event) =>
+                setCoverFile(event.target.files?.[0] ?? null)
+              }
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setCoverImageUrl("");
+                  setCoverFile(null);
+                }}
+                disabled={isSaving || (!coverImageUrl && !coverFile)}
+              >
+                移除封面
+              </Button>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>内容</Label>

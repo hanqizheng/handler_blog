@@ -5,57 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1766658804260,
-      "tag": "0000_dizzy_wendell_vaughn",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1767166486482,
-      "tag": "0001_add_comments",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1767167473858,
-      "tag": "0002_add_comment_parent",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1767355344000,
-      "tag": "0003_add_post_asset_folder",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1767496872140,
-      "tag": "0004_dashing_domino",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1767779247265,
-      "tag": "0005_add_banner_titles",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1767798609362,
-      "tag": "0006_add_album_cover",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1767862769000,
-      "tag": "0007_add_products_and_profiles",
+      "when": 1768474632750,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]
