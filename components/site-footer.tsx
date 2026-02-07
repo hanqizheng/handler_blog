@@ -2,7 +2,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-slate-200 py-8">
       <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <img alt="Huteng" className="h-10 w-auto" src="/brand/huteng.svg" />
+        <img alt="Huteng" className="h-10 w-auto" src="/brand/logo.svg" />
         <div className="flex flex-col gap-2 text-slate-600">
           <div className="flex flex-col text-slate-700">
             <a className="hover:text-slate-900" href="tel:13520922911">

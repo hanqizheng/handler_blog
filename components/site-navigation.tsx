@@ -32,7 +32,7 @@ export function SiteNavigation() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
-          <img src="/brand/huteng.svg" alt="Huteng" className="h-8 w-auto" />
+          <img src="/brand/logo.svg" alt="Huteng" className="h-8 w-auto" />
         </Link>
         <nav
           className={`flex items-center gap-6 text-sm font-semibold ${
