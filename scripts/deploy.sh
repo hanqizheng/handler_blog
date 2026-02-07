@@ -1,9 +1,43 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SSH_PORT=22
+
 log_step() {
   echo
   echo "==> $1"
+}
+
+prompt_with_default() {
+  local prompt="$1"
+  local default_value="$2"
+  local input
+
+  if [ -n "$default_value" ]; then
+    read -r -p "$prompt [$default_value]: " input
+    if [ -z "$input" ]; then
+      input="$default_value"
+    fi
+  else
+    read -r -p "$prompt: " input
+  fi
+
+  printf '%s' "$input"
+}
+
+prompt_required() {
+  local prompt="$1"
+  local default_value="$2"
+  local value
+
+  while true; do
+    value=$(prompt_with_default "$prompt" "$default_value")
+    if [ -n "$value" ]; then
+      printf '%s' "$value"
+      return
+    fi
+    echo "This field is required."
+  done
 }
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -17,9 +51,8 @@ if [ -f "$CONFIG_FILE" ]; then
   set +a
 fi
 
-: "${DEPLOY_HOST:=113.44.250.124}"
+: "${DEPLOY_HOST:=150.109.146.21}"
 : "${DEPLOY_USER:=root}"
-: "${DEPLOY_SSH_PORT:=22}"
 : "${DEPLOY_APP_NAME:=handler_blog}"
 : "${DEPLOY_APP_ROOT:=/root/handler_blog}"
 : "${DEPLOY_APP_PORT:=8283}"
@@ -27,6 +60,28 @@ fi
 : "${DEPLOY_DATABASE_URL:=}"
 
 cd "$ROOT_DIR"
+
+initial_app_name="$DEPLOY_APP_NAME"
+initial_app_root="$DEPLOY_APP_ROOT"
+
+echo
+echo "Deployment config (press Enter to use default):"
+DEPLOY_HOST=$(prompt_required "Server IP / Host" "$DEPLOY_HOST")
+DEPLOY_USER=$(prompt_required "Server User" "$DEPLOY_USER")
+DEPLOY_APP_NAME=$(prompt_required "App Name" "$DEPLOY_APP_NAME")
+default_app_root="$initial_app_root"
+if [ "$initial_app_root" = "/root/$initial_app_name" ] || [ "$initial_app_root" = "/root/handler_blog" ]; then
+  default_app_root="/home/$DEPLOY_USER/$DEPLOY_APP_NAME"
+fi
+DEPLOY_APP_ROOT=$(prompt_required "App Root" "$default_app_root")
+DEPLOY_APP_PORT=$(prompt_required "App Port" "$DEPLOY_APP_PORT")
+DEPLOY_KEEP_RELEASES=$(prompt_required "Keep latest releases" "$DEPLOY_KEEP_RELEASES")
+read -r -p "Override DATABASE_URL for this deploy? [y/N]: " should_override_db_url
+if [[ "$should_override_db_url" =~ ^[Yy]$ ]]; then
+  DEPLOY_DATABASE_URL=$(prompt_required "DATABASE_URL" "$DEPLOY_DATABASE_URL")
+else
+  DEPLOY_DATABASE_URL=""
+fi
 
 if [ ! -f "$ENV_FILE" ]; then
   log_step "Creating $ENV_FILE from .env.local"
@@ -58,7 +113,7 @@ fi
 
 log_step "Preparing local build"
 echo "Project: $DEPLOY_APP_NAME"
-echo "Server: $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_SSH_PORT"
+echo "Server: $DEPLOY_USER@$DEPLOY_HOST:$SSH_PORT"
 echo "App root: $DEPLOY_APP_ROOT"
 echo "App port: $DEPLOY_APP_PORT"
 
@@ -94,10 +149,10 @@ cp "$ENV_FILE" "$STAGING_DIR/.env.production"
 tar -czf "$ARCHIVE" -C "$STAGING_DIR" .
 
 log_step "Uploading package to server"
-scp -P "$DEPLOY_SSH_PORT" "$ARCHIVE" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$RELEASE_NAME.tar.gz"
+scp -P "$SSH_PORT" "$ARCHIVE" "$DEPLOY_USER@$DEPLOY_HOST:/tmp/$RELEASE_NAME.tar.gz"
 
 log_step "Deploying on server"
-ssh -p "$DEPLOY_SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+ssh -p "$SSH_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
   "APP_NAME=$DEPLOY_APP_NAME APP_ROOT=$DEPLOY_APP_ROOT APP_PORT=$DEPLOY_APP_PORT RELEASE_NAME=$RELEASE_NAME KEEP_RELEASES=$DEPLOY_KEEP_RELEASES bash -s" <<'REMOTE'
 set -euo pipefail
 
@@ -135,3 +190,15 @@ REMOTE
 
 log_step "Done"
 echo "Deploy complete: $DEPLOY_HOST (pm2: $DEPLOY_APP_NAME)"
+
+
+
+SELECT id, email FROM admin_users;
+
+START TRANSACTION;
+UPDATE admin_users
+SET email = 'huteng@aiaig.com'
+WHERE email = 'hutengt@aiaig.com';
+SELECT ROW_COUNT() AS affected_rows;
+SELECT id, email FROM admin_users WHERE email = 'huteng@aiaig.com';
+COMMIT;
