@@ -21,6 +21,10 @@ import { AdminUserMenu } from "./AdminUserMenu";
 import { ADMIN_NAV_ITEMS } from "./admin-nav";
 import { normalizeAdminPathname } from "./admin-path";
 
+const SORTED_ADMIN_NAV_ITEMS = [...ADMIN_NAV_ITEMS].sort(
+  (a, b) => a.order - b.order,
+);
+
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") {
     return pathname === "/admin";
@@ -58,7 +62,7 @@ function AdminSidebarContent({
           <SidebarGroupLabel>管理</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {ADMIN_NAV_ITEMS.map((item) => {
+              {SORTED_ADMIN_NAV_ITEMS.map((item) => {
                 const isActive = isActivePath(pathname, item.href);
                 const Icon = item.icon;
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { LinkIcon } from "lucide-react";
 
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { QiniuImage } from "@/components/qiniu-image";
@@ -20,47 +21,45 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-type ProductItem = {
+type FriendLinkItem = {
   id: number;
   name: string;
-  description: string | null;
-  logoUrl: string;
-  linkUrl: string;
+  url: string;
+  iconUrl: string;
   sortOrder: number;
   isActive: number;
 };
 
-interface ProductManagerProps {
-  items: ProductItem[];
+interface FriendLinkManagerProps {
+  items: FriendLinkItem[];
   drawerMode: "create" | "edit" | null;
-  editingItem: ProductItem | null;
+  editingItem: FriendLinkItem | null;
 }
 
 const DEFAULT_FORM = {
   name: "",
-  description: "",
-  logoUrl: "",
-  linkUrl: "",
+  url: "",
+  iconUrl: "",
   sortOrder: "0",
   isActive: true,
 };
 
-export function ProductManager({
+export function FriendLinkManager({
   items,
   drawerMode,
   editingItem,
-}: ProductManagerProps) {
+}: FriendLinkManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [formValues, setFormValues] = useState(DEFAULT_FORM);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   const { uploadFile } = useQiniuUpload({
     allowedTypes: ["image/*"],
-    pathPrefix: "huteng_blog/products",
+    pathPrefix: "huteng_blog/friend-links",
   });
 
   const sortedItems = useMemo(() => {
@@ -71,16 +70,15 @@ export function ProductManager({
     if (drawerMode === "edit" && editingItem) {
       setFormValues({
         name: editingItem.name ?? "",
-        description: editingItem.description ?? "",
-        logoUrl: editingItem.logoUrl ?? "",
-        linkUrl: editingItem.linkUrl ?? "",
+        url: editingItem.url ?? "",
+        iconUrl: editingItem.iconUrl ?? "",
         sortOrder: String(editingItem.sortOrder ?? 0),
         isActive: editingItem.isActive === 1,
       });
     } else {
       setFormValues(DEFAULT_FORM);
     }
-    setLogoFile(null);
+    setIconFile(null);
     setDirty(false);
   }, [drawerMode, editingItem]);
 
@@ -108,8 +106,8 @@ export function ProductManager({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("确定删除该产品吗？")) return;
-    const response = await fetch(`/api/admin/products/${id}`, {
+    if (!confirm("确定删除该友情链接吗？")) return;
+    const response = await fetch(`/api/admin/friend-links/${id}`, {
       method: "DELETE",
     });
     const data = (await response.json().catch(() => null)) as {
@@ -123,8 +121,8 @@ export function ProductManager({
     router.refresh();
   };
 
-  const handleToggle = async (item: ProductItem) => {
-    const response = await fetch(`/api/admin/products/${item.id}`, {
+  const handleToggle = async (item: FriendLinkItem) => {
+    const response = await fetch(`/api/admin/friend-links/${item.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: item.isActive !== 1 }),
@@ -142,27 +140,30 @@ export function ProductManager({
 
   const handleSubmit = async () => {
     if (!formValues.name.trim()) {
-      alert("请输入产品名称");
+      alert("请输入链接名称");
+      return;
+    }
+    if (!formValues.url.trim()) {
+      alert("请输入链接地址");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      let resolvedLogoUrl = formValues.logoUrl.trim();
-      if (logoFile) {
-        const uploadResult = await uploadFile(logoFile);
-        resolvedLogoUrl = uploadResult.url;
+      let resolvedIconUrl = formValues.iconUrl.trim();
+      if (iconFile) {
+        const uploadResult = await uploadFile(iconFile);
+        resolvedIconUrl = uploadResult.url;
       }
 
       if (drawerMode === "create") {
-        const response = await fetch("/api/admin/products", {
+        const response = await fetch("/api/admin/friend-links", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: formValues.name.trim(),
-            description: formValues.description.trim(),
-            logoUrl: resolvedLogoUrl,
-            linkUrl: formValues.linkUrl.trim(),
+            url: formValues.url.trim(),
+            iconUrl: resolvedIconUrl,
             sortOrder: Number(formValues.sortOrder) || 0,
             isActive: formValues.isActive,
           }),
@@ -175,18 +176,20 @@ export function ProductManager({
           throw new Error(data?.error || "创建失败");
         }
       } else if (drawerMode === "edit" && editingItem) {
-        const response = await fetch(`/api/admin/products/${editingItem.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formValues.name.trim(),
-            description: formValues.description.trim(),
-            logoUrl: resolvedLogoUrl,
-            linkUrl: formValues.linkUrl.trim(),
-            sortOrder: Number(formValues.sortOrder) || 0,
-            isActive: formValues.isActive,
-          }),
-        });
+        const response = await fetch(
+          `/api/admin/friend-links/${editingItem.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: formValues.name.trim(),
+              url: formValues.url.trim(),
+              iconUrl: resolvedIconUrl,
+              sortOrder: Number(formValues.sortOrder) || 0,
+              isActive: formValues.isActive,
+            }),
+          },
+        );
         const data = (await response.json().catch(() => null)) as {
           ok?: boolean;
           error?: string;
@@ -207,25 +210,24 @@ export function ProductManager({
   };
 
   const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
-  const previewLogo = formValues.logoUrl || editingItem?.logoUrl || "";
+  const previewIcon = formValues.iconUrl || editingItem?.iconUrl || "";
 
   return (
     <>
       <div className="space-y-6">
         <div className="flex items-center justify-end">
-          <Button onClick={() => navigateDrawer("create")}>新增产品</Button>
+          <Button onClick={() => navigateDrawer("create")}>新增友情链接</Button>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>产品列表</CardTitle>
+            <CardTitle>友情链接列表</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Logo</TableHead>
+                  <TableHead>图标</TableHead>
                   <TableHead>名称</TableHead>
-                  <TableHead>描述</TableHead>
                   <TableHead>链接</TableHead>
                   <TableHead>排序</TableHead>
                   <TableHead>状态</TableHead>
@@ -235,36 +237,31 @@ export function ProductManager({
               <TableBody>
                 {sortedItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7}>暂无产品</TableCell>
+                    <TableCell colSpan={6}>暂无链接</TableCell>
                   </TableRow>
                 ) : (
                   sortedItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {item.logoUrl ? (
+                        {item.iconUrl ? (
                           <QiniuImage
-                            src={item.logoUrl}
+                            src={item.iconUrl}
                             alt={item.name}
-                            className="h-12 w-12 rounded-full object-cover"
+                            className="h-8 w-8 object-cover"
                           />
                         ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-400">
-                            {item.name.slice(0, 1)}
+                          <div className="flex h-8 w-8 items-center justify-center bg-slate-100 text-slate-500">
+                            <LinkIcon className="h-4 w-4" />
                           </div>
                         )}
                       </TableCell>
-                      <TableCell className="max-w-48 truncate font-medium">
-                        {item.name}
-                      </TableCell>
-                      <TableCell className="max-w-60 truncate text-sm text-slate-600">
-                        {item.description || "-"}
-                      </TableCell>
-                      <TableCell className="max-w-60 truncate">
-                        {item.linkUrl || "-"}
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell className="max-w-[280px] truncate">
+                        {item.url || "-"}
                       </TableCell>
                       <TableCell>{item.sortOrder}</TableCell>
                       <TableCell>
-                        {item.isActive === 1 ? "展示中" : "已隐藏"}
+                        {item.isActive === 1 ? "已展示" : "已隐藏"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -284,7 +281,7 @@ export function ProductManager({
                           </Button>
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="destructive"
                             onClick={() => handleDelete(item.id)}
                           >
                             删除
@@ -306,52 +303,54 @@ export function ProductManager({
             handleClose();
           }
         }}
-        title={drawerMode === "create" ? "新增产品" : "编辑产品"}
+        title={drawerMode === "create" ? "新增友情链接" : "编辑友情链接"}
         description={
-          drawerMode === "create" ? "创建产品展示信息" : "更新产品内容与排序"
+          drawerMode === "create"
+            ? "创建站点友情链接项"
+            : "更新友情链接内容与排序"
         }
         width={640}
         dirty={dirty}
       >
         <div className="space-y-4">
-          {previewLogo ? (
+          {previewIcon ? (
             <div className="space-y-2">
-              <Label>Logo 预览</Label>
+              <Label>图标预览</Label>
               <QiniuImage
-                src={previewLogo}
-                alt="product logo"
-                className="h-16 w-16 rounded-full object-cover"
+                src={previewIcon}
+                alt="friend link icon"
+                className="h-12 w-12 object-cover"
               />
             </div>
           ) : null}
           <div className="space-y-2">
-            <Label htmlFor="product-logo-file">产品 Logo（可选）</Label>
+            <Label htmlFor="friend-link-icon">图标（可选）</Label>
             <Input
-              id="product-logo-file"
+              id="friend-link-icon"
               type="file"
               accept="image/*"
               onChange={(event) => {
                 markDirty();
-                setLogoFile(event.target.files?.[0] ?? null);
+                setIconFile(event.target.files?.[0] ?? null);
               }}
             />
             <Input
-              value={formValues.logoUrl}
+              value={formValues.iconUrl}
               onChange={(event) => {
                 markDirty();
                 setFormValues((prev) => ({
                   ...prev,
-                  logoUrl: event.target.value,
+                  iconUrl: event.target.value,
                 }));
               }}
-              placeholder="或直接填写 Logo 图片链接"
+              placeholder="或直接填写图标链接"
             />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="product-name">名称</Label>
+              <Label htmlFor="friend-link-name">展示名称</Label>
               <Input
-                id="product-name"
+                id="friend-link-name"
                 value={formValues.name}
                 onChange={(event) => {
                   markDirty();
@@ -360,45 +359,30 @@ export function ProductManager({
                     name: event.target.value,
                   }));
                 }}
-                placeholder="输入产品名称"
+                placeholder="输入展示名称"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="product-link">跳转链接（可选）</Label>
+              <Label htmlFor="friend-link-url">跳转链接</Label>
               <Input
-                id="product-link"
-                value={formValues.linkUrl}
+                id="friend-link-url"
+                value={formValues.url}
                 onChange={(event) => {
                   markDirty();
                   setFormValues((prev) => ({
                     ...prev,
-                    linkUrl: event.target.value,
+                    url: event.target.value,
                   }));
                 }}
                 placeholder="https://example.com"
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="product-description">描述（可选）</Label>
-            <Input
-              id="product-description"
-              value={formValues.description}
-              onChange={(event) => {
-                markDirty();
-                setFormValues((prev) => ({
-                  ...prev,
-                  description: event.target.value,
-                }));
-              }}
-              placeholder="一句话描述产品"
-            />
-          </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="space-y-2">
-              <Label htmlFor="product-order">排序</Label>
+              <Label htmlFor="friend-link-order">排序</Label>
               <Input
-                id="product-order"
+                id="friend-link-order"
                 type="number"
                 value={formValues.sortOrder}
                 onChange={(event) => {

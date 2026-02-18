@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { QiniuImage } from "@/components/qiniu-image";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
+import { Input } from "@/components/ui/input";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   year: "numeric",
@@ -30,6 +33,7 @@ interface AlbumPhotoManagerProps {
   albumId: number;
   albumSlug: string;
   photos: AlbumPhoto[];
+  drawerMode: "upload" | null;
 }
 
 const formatPhotoDate = (value: AlbumPhoto["createdAt"]) =>
@@ -39,15 +43,43 @@ export function AlbumPhotoManager({
   albumId,
   albumSlug,
   photos,
+  drawerMode,
 }: AlbumPhotoManagerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<AlbumPhoto[]>(photos);
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setItems(photos);
+  }, [photos]);
+
+  useEffect(() => {
+    if (drawerMode !== "upload") {
+      setFiles([]);
+      setDirty(false);
+    }
+  }, [drawerMode]);
 
   const { uploadFile } = useQiniuUpload({
     allowedTypes: ["image/*"],
     pathPrefix: `photo_album/${albumSlug}`,
   });
+
+  const navigateDrawer = useCallback(
+    (mode: "upload" | null) => {
+      const nextUrl = buildDrawerUrl(
+        pathname,
+        new URLSearchParams(searchParams.toString()),
+        mode,
+      );
+      router.push(nextUrl);
+    },
+    [pathname, router, searchParams],
+  );
 
   const sortedItems = useMemo(
     () =>
@@ -92,6 +124,8 @@ export function AlbumPhotoManager({
         }
       }
       setFiles([]);
+      setDirty(false);
+      navigateDrawer(null);
       await refreshItems();
     } catch (error) {
       alert(error instanceof Error ? error.message : "上传失败");
@@ -118,30 +152,11 @@ export function AlbumPhotoManager({
   };
 
   return (
-    <div className="space-y-6">
+    <>
       <Card>
-        <CardHeader>
-          <CardTitle>上传图片</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(event) => {
-              const list = Array.from(event.target.files ?? []);
-              setFiles(list);
-            }}
-          />
-          <Button onClick={handleUpload} disabled={isSubmitting}>
-            {isSubmitting ? "上传中..." : "开始上传"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>图片列表</CardTitle>
+          <Button onClick={() => navigateDrawer("upload")}>上传图片</Button>
         </CardHeader>
         <CardContent>
           {sortedItems.length === 0 ? (
@@ -174,6 +189,43 @@ export function AlbumPhotoManager({
           )}
         </CardContent>
       </Card>
-    </div>
+      <AdminFormDrawer
+        open={drawerMode === "upload"}
+        onOpenChange={(open) => {
+          if (!open) {
+            navigateDrawer(null);
+          }
+        }}
+        title="上传图片"
+        description="批量上传图片到当前相册"
+        width={640}
+        dirty={dirty}
+      >
+        <div className="space-y-4">
+          <Input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(event) => {
+              const list = Array.from(event.target.files ?? []);
+              setFiles(list);
+              setDirty(list.length > 0);
+            }}
+          />
+          <div className="flex items-center gap-3">
+            <Button onClick={handleUpload} disabled={isSubmitting}>
+              {isSubmitting ? "上传中..." : "开始上传"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => navigateDrawer(null)}
+              disabled={isSubmitting}
+            >
+              取消
+            </Button>
+          </div>
+        </div>
+      </AdminFormDrawer>
+    </>
   );
 }

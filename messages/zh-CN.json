@@ -1,5 +1,85 @@
 {
   "app": {
     "name": "handler_blog"
+  },
+  "site": {
+    "common": {
+      "logoAlt": "Huteng"
+    },
+    "nav": {
+      "home": "首页",
+      "posts": "鹄说",
+      "albums": "相册",
+      "about": "关于我",
+      "locale": {
+        "zh-CN": "中文",
+        "en": "EN"
+      }
+    },
+    "footer": {
+      "tagline": "记录文字、影像与产品思考。",
+      "contactTitle": "联系方式",
+      "phoneLabel": "电话",
+      "emailLabel": "邮箱",
+      "friendLinks": "友情链接",
+      "emptyFriendLinks": "暂无友情链接",
+      "friends": {
+        "aiaig": "AIAIG",
+        "chunzuo": "春座"
+      },
+      "copyright": "© {year} Huteng. All rights reserved."
+    },
+    "home": {
+      "heroTag": "Handler Blog",
+      "heroTitle": "用设计感，讲好每一篇故事。",
+      "heroDescription": "用文字、影像与产品共同塑造你的品牌气质。",
+      "bannerTag": "Banner",
+      "bannerFallbackTitle": "Handler Blog",
+      "bannerFallbackSubtitle": "用设计感写下每一次灵感。",
+      "latestTag": "Latest Posts",
+      "latestTitle": "鹄说",
+      "latestDescription": "把深度思考整理成可阅读的故事，留住灵感轨迹。",
+      "viewMore": "查看更多",
+      "emptyPosts": "暂无文章",
+      "noCover": "暂无封面",
+      "productsTag": "Products",
+      "productsTitle": "个人产品",
+      "productsDescription": "以体验为中心的产品，鹄说不鹄做",
+      "emptyProducts": "暂无产品信息",
+      "productFeatured": "精选产品",
+      "productNoDescription": "暂无描述",
+      "productLearnMore": "了解更多 ->"
+    },
+    "posts": {
+      "eyebrow": "Posts",
+      "title": "文章列表",
+      "description": "按时间排序，记录每一次灵感与沉淀。",
+      "empty": "暂无文章",
+      "noCover": "暂无封面"
+    },
+    "postDetail": {
+      "notFound": "文章不存在",
+      "backToPosts": "返回文章列表",
+      "backToPrevious": "返回上一页",
+      "backHome": "返回首页"
+    },
+    "albums": {
+      "title": "相册列表",
+      "empty": "暂无相册",
+      "noCover": "暂无封面"
+    },
+    "albumDetail": {
+      "notFound": "相册不存在",
+      "backToAlbums": "返回相册列表",
+      "emptyPhotos": "暂无照片"
+    },
+    "about": {
+      "eyebrow": "Hu Teng",
+      "title": "关于我",
+      "description": "从个人主页到独立经纪，从互联网到海外置业，记录一条更真实、更自我的路线。",
+      "profileTitle": "个人简介",
+      "profileBadge": "主页",
+      "emptyProfile": "暂无个人简介内容"
+    }
   }
 }

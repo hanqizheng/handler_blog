@@ -1,5 +1,9 @@
 import { desc } from "drizzle-orm";
 
+import {
+  parseDrawerState,
+  type AdminSearchParams,
+} from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { db } from "@/db";
 import { photoAlbums } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
@@ -7,7 +11,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { AlbumCreateForm } from "./_components/AlbumCreateForm";
 
-export default async function AdminAlbumsPage() {
+const ALBUM_DRAWER_MODES = ["create"] as const;
+
+export default async function AdminAlbumsPage({
+  searchParams,
+}: {
+  searchParams: Promise<AdminSearchParams>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { mode: drawerMode } = parseDrawerState(
+    resolvedSearchParams,
+    ALBUM_DRAWER_MODES,
+  );
+
   const items = await db
     .select()
     .from(photoAlbums)
@@ -21,7 +37,7 @@ export default async function AdminAlbumsPage() {
           创建相册并上传图片，图片将保存在 photo_album/[album_name_xxx]。
         </p>
       </div>
-      <AlbumCreateForm />
+      <AlbumCreateForm drawerMode={drawerMode} />
       <Card>
         <CardHeader>
           <CardTitle>相册列表</CardTitle>

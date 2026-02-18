@@ -1,17 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Link } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
-const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/posts", label: "博客" },
-  { href: "/albums", label: "相册" },
-  { href: "/about", label: "关于我" },
-];
+import { LOCALES } from "@/constants/i18n";
+import { siteNavItems } from "@/constants/site";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
+import type { Locale } from "@/types/i18n";
+
+const localeLabelKeys: Record<Locale, "locale.zh-CN" | "locale.en"> = {
+  "zh-CN": "locale.zh-CN",
+  en: "locale.en",
+};
 
 export function SiteNavigation() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const t = useTranslations("site.nav");
+  const commonT = useTranslations("site.common");
+  const locale = useLocale() as Locale;
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +35,19 @@ export function SiteNavigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleLocaleChange = (targetLocale: Locale) => {
+    if (targetLocale === locale) {
+      return;
+    }
+
+    const query = searchParams.toString();
+    const href = query ? `${pathname}?${query}` : pathname;
+
+    router.replace(href as Parameters<typeof router.replace>[0], {
+      locale: targetLocale,
+    });
+  };
+
   return (
     <header
       className={`sticky top-0 z-50 w-full transition-colors ${
@@ -32,22 +56,43 @@ export function SiteNavigation() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
-          <img src="/brand/logo.svg" alt="Huteng" className="h-8 w-auto" />
+          <img
+            src="/brand/logo.svg"
+            alt={commonT("logoAlt")}
+            className="h-8 w-auto"
+          />
         </Link>
         <nav
-          className={`flex items-center gap-6 text-sm font-semibold ${
+          className={`flex items-center gap-4 text-xs font-semibold sm:gap-6 sm:text-sm ${
             isScrolled ? "text-slate-900" : "text-slate-900"
           }`}
         >
-          {navItems.map((item) => (
+          {siteNavItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className="hover:text-slate-950"
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
+          <div className="ml-1 flex items-center border border-slate-200">
+            {LOCALES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => handleLocaleChange(item)}
+                className={cn(
+                  "px-2 py-1 text-[11px] transition",
+                  locale === item
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-700 hover:bg-slate-100",
+                )}
+              >
+                {t(localeLabelKeys[item])}
+              </button>
+            ))}
+          </div>
         </nav>
       </div>
     </header>

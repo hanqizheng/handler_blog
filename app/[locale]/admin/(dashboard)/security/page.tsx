@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import QRCode from "qrcode";
 
+import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
+import { QiniuImage } from "@/components/qiniu-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { QiniuImage } from "@/components/qiniu-image";
 
 type TotpState =
   | { status: "loading" }
@@ -15,12 +18,32 @@ type TotpState =
   | { status: "setup"; secret: string; otpauth: string };
 
 export default function AdminSecurityPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [totpState, setTotpState] = useState<TotpState>({ status: "loading" });
   const [token, setToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [captchaEnabled, setCaptchaEnabled] = useState<boolean | null>(null);
   const [captchaSubmitting, setCaptchaSubmitting] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  const navigateDrawer = useCallback(
+    (mode: "totp-setup" | null) => {
+      const nextUrl = buildDrawerUrl(
+        pathname,
+        new URLSearchParams(searchParams.toString()),
+        mode,
+      );
+      router.push(nextUrl);
+    },
+    [pathname, router, searchParams],
+  );
+
+  const isSetupDrawerOpen =
+    searchParams.get("drawer") === "totp-setup" && totpState.status === "setup";
 
   const loadTotp = async () => {
     const response = await fetch("/api/admin/auth/totp-setup");
@@ -83,6 +106,13 @@ export default function AdminSecurityPage() {
     };
   }, [totpState]);
 
+  useEffect(() => {
+    if (!isSetupDrawerOpen) {
+      setToken("");
+      setDirty(false);
+    }
+  }, [isSetupDrawerOpen]);
+
   const handleEnable = async () => {
     if (totpState.status !== "setup") return;
     setIsSubmitting(true);
@@ -100,6 +130,8 @@ export default function AdminSecurityPage() {
         throw new Error(data?.error || "启用失败");
       }
       setToken("");
+      setDirty(false);
+      navigateDrawer(null);
       await loadTotp();
     } catch (error) {
       alert(error instanceof Error ? error.message : "启用失败");
@@ -121,6 +153,7 @@ export default function AdminSecurityPage() {
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || "停用失败");
       }
+      navigateDrawer(null);
       await loadTotp();
     } catch (error) {
       alert(error instanceof Error ? error.message : "停用失败");
@@ -198,36 +231,10 @@ export default function AdminSecurityPage() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p>1. 使用验证器应用扫码绑定：</p>
-                {qrCode ? (
-                  <QiniuImage
-                    src={qrCode}
-                    alt="TOTP QR Code"
-                    className="h-48 w-48 rounded border border-slate-200 bg-white p-2"
-                  />
-                ) : (
-                  <p className="text-xs text-slate-500">二维码生成中...</p>
-                )}
-                <p className="text-xs text-slate-400">
-                  无法扫码时可手动输入密钥：
-                </p>
-                <code className="block rounded bg-slate-100 p-2 text-xs text-slate-800">
-                  {totpState.secret}
-                </code>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="totp-token">2. 输入验证码完成绑定</Label>
-                <Input
-                  id="totp-token"
-                  value={token}
-                  onChange={(event) => setToken(event.target.value)}
-                  placeholder="6 位验证码"
-                />
-              </div>
-              <Button onClick={handleEnable} disabled={isSubmitting}>
-                {isSubmitting ? "绑定中..." : "启用 TOTP"}
+            <div className="space-y-3">
+              <p>当前未启用 TOTP 二次验证。</p>
+              <Button onClick={() => navigateDrawer("totp-setup")}>
+                开始绑定
               </Button>
             </div>
           )}
@@ -264,6 +271,67 @@ export default function AdminSecurityPage() {
           )}
         </CardContent>
       </Card>
+      <AdminFormDrawer
+        open={isSetupDrawerOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            navigateDrawer(null);
+          }
+        }}
+        title="绑定 TOTP"
+        description="使用验证器应用扫码后输入验证码完成绑定"
+        width={640}
+        dirty={dirty}
+      >
+        {totpState.status !== "setup" ? (
+          <p className="text-muted-foreground text-sm">请先刷新页面后重试。</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p>1. 使用验证器应用扫码绑定：</p>
+              {qrCode ? (
+                <QiniuImage
+                  src={qrCode}
+                  alt="TOTP QR Code"
+                  className="h-48 w-48 rounded border border-slate-200 bg-white p-2"
+                />
+              ) : (
+                <p className="text-xs text-slate-500">二维码生成中...</p>
+              )}
+              <p className="text-xs text-slate-400">
+                无法扫码时可手动输入密钥：
+              </p>
+              <code className="block rounded bg-slate-100 p-2 text-xs text-slate-800">
+                {totpState.secret}
+              </code>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="totp-token">2. 输入验证码完成绑定</Label>
+              <Input
+                id="totp-token"
+                value={token}
+                onChange={(event) => {
+                  if (!dirty) setDirty(true);
+                  setToken(event.target.value);
+                }}
+                placeholder="6 位验证码"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <Button onClick={handleEnable} disabled={isSubmitting}>
+                {isSubmitting ? "绑定中..." : "启用 TOTP"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => navigateDrawer(null)}
+                disabled={isSubmitting}
+              >
+                取消
+              </Button>
+            </div>
+          </div>
+        )}
+      </AdminFormDrawer>
     </section>
   );
 }

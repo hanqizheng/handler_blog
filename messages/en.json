@@ -1,5 +1,85 @@
 {
   "app": {
     "name": "handler_blog"
+  },
+  "site": {
+    "common": {
+      "logoAlt": "Huteng"
+    },
+    "nav": {
+      "home": "Home",
+      "posts": "Insights",
+      "albums": "Albums",
+      "about": "About",
+      "locale": {
+        "zh-CN": "中文",
+        "en": "EN"
+      }
+    },
+    "footer": {
+      "tagline": "Thoughts in words, images, and product building.",
+      "contactTitle": "Contact",
+      "phoneLabel": "Phone",
+      "emailLabel": "Email",
+      "friendLinks": "Friends",
+      "emptyFriendLinks": "No links yet.",
+      "friends": {
+        "aiaig": "AIAIG",
+        "chunzuo": "Chunzuo"
+      },
+      "copyright": "© {year} Huteng. All rights reserved."
+    },
+    "home": {
+      "heroTag": "Handler Blog",
+      "heroTitle": "Tell every story with a strong design sense.",
+      "heroDescription": "Shape your brand voice through writing, visuals, and products.",
+      "bannerTag": "Banner",
+      "bannerFallbackTitle": "Handler Blog",
+      "bannerFallbackSubtitle": "Capture every spark with thoughtful design.",
+      "latestTag": "Latest Posts",
+      "latestTitle": "Insights",
+      "latestDescription": "Organize deep thinking into stories worth reading.",
+      "viewMore": "View More",
+      "emptyPosts": "No posts yet.",
+      "noCover": "No cover image",
+      "productsTag": "Products",
+      "productsTitle": "Products",
+      "productsDescription": "Experience-first products, built with intention.",
+      "emptyProducts": "No product information yet.",
+      "productFeatured": "Featured",
+      "productNoDescription": "No description yet.",
+      "productLearnMore": "Learn more ->"
+    },
+    "posts": {
+      "eyebrow": "Posts",
+      "title": "Post List",
+      "description": "Sorted by time to capture each idea and reflection.",
+      "empty": "No posts yet.",
+      "noCover": "No cover image"
+    },
+    "postDetail": {
+      "notFound": "Post not found.",
+      "backToPosts": "Back to posts",
+      "backToPrevious": "Back",
+      "backHome": "Back to home"
+    },
+    "albums": {
+      "title": "Albums",
+      "empty": "No albums yet.",
+      "noCover": "No cover image"
+    },
+    "albumDetail": {
+      "notFound": "Album not found.",
+      "backToAlbums": "Back to albums",
+      "emptyPhotos": "No photos yet."
+    },
+    "about": {
+      "eyebrow": "Hu Teng",
+      "title": "About",
+      "description": "From personal homepage to independent brokerage, from internet ventures to overseas real estate.",
+      "profileTitle": "Profile",
+      "profileBadge": "Home",
+      "emptyProfile": "No profile content yet."
+    }
   }
 }
