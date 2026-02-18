@@ -190,15 +190,3 @@ REMOTE
 
 log_step "Done"
 echo "Deploy complete: $DEPLOY_HOST (pm2: $DEPLOY_APP_NAME)"
-
-
-
-SELECT id, email FROM admin_users;
-
-START TRANSACTION;
-UPDATE admin_users
-SET email = 'huteng@aiaig.com'
-WHERE email = 'hutengt@aiaig.com';
-SELECT ROW_COUNT() AS affected_rows;
-SELECT id, email FROM admin_users WHERE email = 'huteng@aiaig.com';
-COMMIT;
