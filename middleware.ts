@@ -35,6 +35,13 @@ const base64UrlToUint8Array = (input: string) => {
 
 const textEncoder = new TextEncoder();
 
+type AdminActorType = "owner" | "dev";
+
+const isDevelopmentRuntime = () => process.env.NODE_ENV === "development";
+
+const normalizeActorType = (value: unknown): AdminActorType =>
+  value === "dev" ? "dev" : "owner";
+
 const verifyAdminToken = async (token: string) => {
   const secret = process.env.ADMIN_AUTH_SECRET?.trim();
   if (!secret) {
@@ -61,19 +68,40 @@ const verifyAdminToken = async (token: string) => {
     return null;
   }
 
-  const payloadBytes = base64UrlToUint8Array(payload);
-  const decoded = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
-    sub?: number;
-    email?: string;
-    exp?: number;
-  };
-  if (!decoded?.sub || !decoded?.email || !decoded?.exp) {
+  try {
+    const payloadBytes = base64UrlToUint8Array(payload);
+    const decoded = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
+      sub?: unknown;
+      email?: unknown;
+      exp?: unknown;
+      actorType?: unknown;
+    };
+    if (
+      typeof decoded.sub !== "number" ||
+      !Number.isInteger(decoded.sub) ||
+      typeof decoded.email !== "string" ||
+      !decoded.email ||
+      typeof decoded.exp !== "number" ||
+      !Number.isFinite(decoded.exp)
+    ) {
+      return null;
+    }
+    if (decoded.exp <= Math.floor(Date.now() / 1000)) {
+      return null;
+    }
+    const actorType = normalizeActorType(decoded.actorType);
+    if (actorType === "dev" && !isDevelopmentRuntime()) {
+      return null;
+    }
+    return {
+      sub: decoded.sub,
+      email: decoded.email,
+      exp: decoded.exp,
+      actorType,
+    };
+  } catch {
     return null;
   }
-  if (decoded.exp <= Math.floor(Date.now() / 1000)) {
-    return null;
-  }
-  return decoded;
 };
 
 export async function middleware(request: NextRequest) {
