@@ -1,15 +1,25 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
 import { QiniuImage } from "@/components/qiniu-image";
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { postCategories, posts } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
 import { formatDateYmd } from "@/utils/date";
 
 export default async function PostsPage() {
   const t = await getTranslations("site.posts");
-  const items = await db.select().from(posts).orderBy(desc(posts.id));
+  const items = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      coverImageUrl: posts.coverImageUrl,
+      createdAt: posts.createdAt,
+      categoryName: postCategories.name,
+    })
+    .from(posts)
+    .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
+    .orderBy(desc(posts.id));
 
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10">
@@ -49,6 +59,11 @@ export default async function PostsPage() {
                   <span className="text-lg font-bold text-slate-900 transition-colors group-hover:text-slate-600">
                     {item.title}
                   </span>
+                  {item.categoryName ? (
+                    <span className="inline-flex w-fit bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                      {item.categoryName}
+                    </span>
+                  ) : null}
                   <span className="text-xs text-slate-500">
                     {formatDateYmd(item.createdAt)}
                   </span>

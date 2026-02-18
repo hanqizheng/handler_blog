@@ -26,9 +26,12 @@ interface CommentEditorFormProps {
   initialStatus?: CommentStatus;
   layout?: EditorLayout;
   showHeader?: boolean;
+  formId?: string;
+  hideActions?: boolean;
   onCancel?: () => void;
   onSuccess?: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  onSubmittingChange?: (submitting: boolean) => void;
 }
 
 export function CommentEditorForm({
@@ -40,9 +43,12 @@ export function CommentEditorForm({
   initialStatus = "visible",
   layout = "card",
   showHeader = true,
+  formId,
+  hideActions = false,
   onCancel,
   onSuccess,
   onDirtyChange,
+  onSubmittingChange,
 }: CommentEditorFormProps) {
   const router = useRouter();
   const [content, setContent] = useState(initialContent);
@@ -56,6 +62,10 @@ export function CommentEditorForm({
     setIsDirty(false);
     onDirtyChange?.(false);
   }, [initialContent, initialStatus, mode, commentId, onDirtyChange]);
+
+  useEffect(() => {
+    onSubmittingChange?.(isSaving);
+  }, [isSaving, onSubmittingChange]);
 
   const markDirty = () => {
     if (!isDirty) {
@@ -124,7 +134,7 @@ export function CommentEditorForm({
   };
 
   const formContent = (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <form id={formId} className="space-y-6" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <Label htmlFor="comment-content">内容</Label>
         <textarea
@@ -156,14 +166,16 @@ export function CommentEditorForm({
           </select>
         </div>
       ) : null}
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={isSaving}>
-          {isSaving ? "保存中..." : "保存"}
-        </Button>
-        <Button type="button" variant="ghost" onClick={handleCancel}>
-          取消
-        </Button>
-      </div>
+      {!hideActions ? (
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? "保存中..." : "保存"}
+          </Button>
+          <Button type="button" variant="ghost" onClick={handleCancel}>
+            取消
+          </Button>
+        </div>
+      ) : null}
     </form>
   );
 

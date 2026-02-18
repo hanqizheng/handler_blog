@@ -8,6 +8,7 @@ import { QiniuImage } from "@/components/qiniu-image";
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
 import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -312,6 +313,13 @@ export function ProductManager({
         }
         width={640}
         dirty={dirty}
+        footer={
+          <AdminDrawerActions
+            submitting={isSubmitting}
+            onCancel={handleClose}
+            onConfirm={handleSubmit}
+          />
+        }
       >
         <div className="space-y-4">
           {previewLogo ? (
@@ -425,18 +433,6 @@ export function ProductManager({
               />
               立即展示
             </label>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "保存中..." : "保存"}
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleClose}
-              disabled={isSubmitting}
-            >
-              取消
-            </Button>
           </div>
         </div>
       </AdminFormDrawer>

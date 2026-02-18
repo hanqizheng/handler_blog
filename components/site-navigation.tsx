@@ -59,7 +59,7 @@ export function SiteNavigation() {
           <img
             src="/brand/logo.svg"
             alt={commonT("logoAlt")}
-            className="h-8 w-auto"
+            className="h-10 w-auto"
           />
         </Link>
         <nav

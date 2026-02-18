@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
 import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import {
   Table,
@@ -61,9 +62,11 @@ export function CommentManager({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [dirty, setDirty] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setDirty(false);
+    setIsSubmitting(false);
   }, [drawerMode, editableComment?.id, replyTargetComment?.id]);
 
   const navigateDrawer = useCallback(
@@ -90,6 +93,10 @@ export function CommentManager({
   };
 
   const isDrawerOpen = drawerMode === "edit" || drawerMode === "reply";
+  const formId =
+    drawerMode === "reply"
+      ? "comment-reply-editor-form"
+      : "comment-edit-editor-form";
 
   return (
     <>
@@ -183,6 +190,13 @@ export function CommentManager({
         }
         width={640}
         dirty={dirty}
+        footer={
+          <AdminDrawerActions
+            formId={formId}
+            submitting={isSubmitting}
+            onCancel={handleClose}
+          />
+        }
       >
         {drawerMode === "edit" ? (
           editableComment ? (
@@ -194,9 +208,12 @@ export function CommentManager({
               initialStatus={editableComment.status}
               layout="plain"
               showHeader={false}
+              formId={formId}
+              hideActions
               onCancel={handleClose}
               onSuccess={handleSaved}
               onDirtyChange={setDirty}
+              onSubmittingChange={setIsSubmitting}
             />
           ) : (
             <p className="text-muted-foreground text-sm">评论不存在。</p>
@@ -220,9 +237,12 @@ export function CommentManager({
               parentId={replyTargetComment.id}
               layout="plain"
               showHeader={false}
+              formId={formId}
+              hideActions
               onCancel={handleClose}
               onSuccess={handleSaved}
               onDirtyChange={setDirty}
+              onSubmittingChange={setIsSubmitting}
             />
           </div>
         ) : (

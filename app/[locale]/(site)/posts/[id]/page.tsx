@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { SiteBackLink } from "@/components/site-back-link";
 import { db } from "@/db";
-import { commentCaptchaSettings, posts } from "@/db/schema";
+import { commentCaptchaSettings, postCategories, posts } from "@/db/schema";
 import { CommentSection } from "@/components/comment-section";
 import { Link } from "@/i18n/navigation";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
@@ -39,7 +39,18 @@ export default async function PostDetailPage({
     );
   }
 
-  const [item] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+  const [item] = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      content: posts.content,
+      createdAt: posts.createdAt,
+      categoryName: postCategories.name,
+    })
+    .from(posts)
+    .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
+    .where(eq(posts.id, id))
+    .limit(1);
   const [captchaSetting] = await db
     .select({ isEnabled: commentCaptchaSettings.isEnabled })
     .from(commentCaptchaSettings)
@@ -71,6 +82,11 @@ export default async function PostDetailPage({
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
           {item.title}
         </h1>
+        {item.categoryName ? (
+          <span className="inline-flex bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+            {item.categoryName}
+          </span>
+        ) : null}
         <p className="text-sm text-slate-500">
           {formatDateYmd(item.createdAt)}
         </p>

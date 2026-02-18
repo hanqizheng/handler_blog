@@ -1,11 +1,11 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import {
   parseDrawerState,
   type AdminSearchParams,
 } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { postCategories, posts } from "@/db/schema";
 
 import { PostManager } from "./_components/PostManager";
 
@@ -23,9 +23,24 @@ export default async function AdminPostsPage({
   );
 
   const items = await db
-    .select({ id: posts.id, title: posts.title })
+    .select({
+      id: posts.id,
+      title: posts.title,
+      categoryName: postCategories.name,
+    })
     .from(posts)
+    .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
     .orderBy(desc(posts.id));
+
+  const categories = await db
+    .select({
+      id: postCategories.id,
+      name: postCategories.name,
+      isActive: postCategories.isActive,
+      sortOrder: postCategories.sortOrder,
+    })
+    .from(postCategories)
+    .orderBy(asc(postCategories.sortOrder), desc(postCategories.id));
 
   const editingPost =
     drawerMode === "edit" && id
@@ -37,6 +52,7 @@ export default async function AdminPostsPage({
               content: posts.content,
               assetFolder: posts.assetFolder,
               coverImageUrl: posts.coverImageUrl,
+              categoryId: posts.categoryId,
             })
             .from(posts)
             .where(eq(posts.id, id))
@@ -47,6 +63,7 @@ export default async function AdminPostsPage({
   return (
     <PostManager
       items={items}
+      categories={categories}
       drawerMode={drawerMode}
       editingPost={editingPost}
     />

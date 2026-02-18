@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { QiniuImage } from "@/components/qiniu-image";
 import { Button } from "@/components/ui/button";
+import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
@@ -282,6 +283,18 @@ export default function AdminSecurityPage() {
         description="使用验证器应用扫码后输入验证码完成绑定"
         width={640}
         dirty={dirty}
+        footer={
+          totpState.status === "setup" ? (
+            <AdminDrawerActions
+              submitting={isSubmitting}
+              onCancel={() => navigateDrawer(null)}
+              onConfirm={handleEnable}
+              primaryLabel="启用 TOTP"
+              primaryLoadingLabel="绑定中..."
+              primaryDisabled={token.trim().length === 0}
+            />
+          ) : undefined
+        }
       >
         {totpState.status !== "setup" ? (
           <p className="text-muted-foreground text-sm">请先刷新页面后重试。</p>
@@ -316,18 +329,6 @@ export default function AdminSecurityPage() {
                 }}
                 placeholder="6 位验证码"
               />
-            </div>
-            <div className="flex items-center gap-3">
-              <Button onClick={handleEnable} disabled={isSubmitting}>
-                {isSubmitting ? "绑定中..." : "启用 TOTP"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => navigateDrawer(null)}
-                disabled={isSubmitting}
-              >
-                取消
-              </Button>
             </div>
           </div>
         )}

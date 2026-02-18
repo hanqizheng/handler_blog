@@ -9,3 +9,4 @@ export * from "./photo-album-photos";
 export * from "./products";
 export * from "./site-profiles";
 export * from "./friend-links";
+export * from "./post-categories";

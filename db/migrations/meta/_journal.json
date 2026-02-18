@@ -15,6 +15,13 @@
       "when": 1768474632751,
       "tag": "0001_friend_links",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1771430400000,
+      "tag": "0002_post_categories",
+      "breakpoints": true
     }
   ]
 }

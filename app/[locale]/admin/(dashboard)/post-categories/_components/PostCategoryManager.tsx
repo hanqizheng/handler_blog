@@ -4,8 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
-import { QiniuImage } from "@/components/qiniu-image";
-import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
@@ -20,48 +18,40 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toPostCategorySlug } from "@/utils/post-category";
 
-type BannerItem = {
+type CategoryItem = {
   id: number;
-  imageUrl: string;
-  linkUrl: string;
-  mainTitle: string;
-  subTitle: string;
+  name: string;
+  slug: string;
   sortOrder: number;
   isActive: number;
 };
 
-interface BannerManagerProps {
-  items: BannerItem[];
+interface PostCategoryManagerProps {
+  items: CategoryItem[];
   drawerMode: "create" | "edit" | null;
-  editingItem: BannerItem | null;
+  editingItem: CategoryItem | null;
 }
 
 const DEFAULT_FORM = {
-  linkUrl: "",
-  mainTitle: "",
-  subTitle: "",
+  name: "",
+  slug: "",
   sortOrder: "0",
   isActive: true,
 };
 
-export function BannerManager({
+export function PostCategoryManager({
   items,
   drawerMode,
   editingItem,
-}: BannerManagerProps) {
+}: PostCategoryManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [formValues, setFormValues] = useState(DEFAULT_FORM);
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dirty, setDirty] = useState(false);
-
-  const { uploadFile } = useQiniuUpload({
-    allowedTypes: ["image/*"],
-    pathPrefix: "huteng_blog/banners",
-  });
 
   const sortedItems = useMemo(() => {
     return [...items].sort((a, b) => a.sortOrder - b.sortOrder || b.id - a.id);
@@ -70,17 +60,16 @@ export function BannerManager({
   useEffect(() => {
     if (drawerMode === "edit" && editingItem) {
       setFormValues({
-        linkUrl: editingItem.linkUrl || "",
-        mainTitle: editingItem.mainTitle || "",
-        subTitle: editingItem.subTitle || "",
+        name: editingItem.name ?? "",
+        slug: editingItem.slug ?? "",
         sortOrder: String(editingItem.sortOrder ?? 0),
         isActive: editingItem.isActive === 1,
       });
     } else {
       setFormValues(DEFAULT_FORM);
     }
-    setImageFile(null);
     setDirty(false);
+    setIsSubmitting(false);
   }, [drawerMode, editingItem]);
 
   const navigateDrawer = useCallback(
@@ -107,8 +96,8 @@ export function BannerManager({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("确定删除该 Banner 吗？")) return;
-    const response = await fetch(`/api/admin/banners/${id}`, {
+    if (!confirm("确定删除该分类吗？")) return;
+    const response = await fetch(`/api/admin/post-categories/${id}`, {
       method: "DELETE",
     });
     const data = (await response.json().catch(() => null)) as {
@@ -122,8 +111,8 @@ export function BannerManager({
     router.refresh();
   };
 
-  const handleToggle = async (item: BannerItem) => {
-    const response = await fetch(`/api/admin/banners/${item.id}`, {
+  const handleToggle = async (item: CategoryItem) => {
+    const response = await fetch(`/api/admin/post-categories/${item.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: item.isActive !== 1 }),
@@ -140,23 +129,28 @@ export function BannerManager({
   };
 
   const handleSubmit = async () => {
-    if (drawerMode === "create" && !imageFile) {
-      alert("请选择要上传的图片");
+    const trimmedName = formValues.name.trim();
+    const resolvedSlug = toPostCategorySlug(formValues.slug || trimmedName);
+
+    if (!trimmedName) {
+      alert("请输入分类名称");
+      return;
+    }
+
+    if (!resolvedSlug) {
+      alert("请输入有效的分类 slug");
       return;
     }
 
     setIsSubmitting(true);
     try {
       if (drawerMode === "create") {
-        const uploadResult = await uploadFile(imageFile as File);
-        const response = await fetch("/api/admin/banners", {
+        const response = await fetch("/api/admin/post-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            imageUrl: uploadResult.url,
-            linkUrl: formValues.linkUrl,
-            mainTitle: formValues.mainTitle,
-            subTitle: formValues.subTitle,
+            name: trimmedName,
+            slug: resolvedSlug,
             sortOrder: Number(formValues.sortOrder) || 0,
             isActive: formValues.isActive,
           }),
@@ -169,17 +163,19 @@ export function BannerManager({
           throw new Error(data?.error || "创建失败");
         }
       } else if (drawerMode === "edit" && editingItem) {
-        const response = await fetch(`/api/admin/banners/${editingItem.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            linkUrl: formValues.linkUrl,
-            mainTitle: formValues.mainTitle,
-            subTitle: formValues.subTitle,
-            sortOrder: Number(formValues.sortOrder) || 0,
-            isActive: formValues.isActive,
-          }),
-        });
+        const response = await fetch(
+          `/api/admin/post-categories/${editingItem.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: trimmedName,
+              slug: resolvedSlug,
+              sortOrder: Number(formValues.sortOrder) || 0,
+              isActive: formValues.isActive,
+            }),
+          },
+        );
         const data = (await response.json().catch(() => null)) as {
           ok?: boolean;
           error?: string;
@@ -200,24 +196,25 @@ export function BannerManager({
   };
 
   const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
+  const slugPreview = toPostCategorySlug(formValues.slug || formValues.name);
 
   return (
     <>
       <div className="space-y-6">
         <div className="flex items-center justify-end">
-          <Button onClick={() => navigateDrawer("create")}>新增 Banner</Button>
+          <Button onClick={() => navigateDrawer("create")}>新增分类</Button>
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Banner 列表</CardTitle>
+            <CardTitle>分类列表</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>预览</TableHead>
-                  <TableHead>链接</TableHead>
-                  <TableHead>标题</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>名称</TableHead>
+                  <TableHead>Slug</TableHead>
                   <TableHead>排序</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="w-56">操作</TableHead>
@@ -226,34 +223,17 @@ export function BannerManager({
               <TableBody>
                 {sortedItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6}>暂无 Banner</TableCell>
+                    <TableCell colSpan={6}>暂无分类</TableCell>
                   </TableRow>
                 ) : (
                   sortedItems.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell>
-                        <QiniuImage
-                          src={item.imageUrl}
-                          alt="banner"
-                          className="h-14 w-24 rounded object-cover"
-                        />
-                      </TableCell>
-                      <TableCell className="max-w-60 truncate">
-                        {item.linkUrl || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="text-sm font-medium">
-                            {item.mainTitle || "-"}
-                          </div>
-                          <div className="text-xs text-slate-500">
-                            {item.subTitle || "-"}
-                          </div>
-                        </div>
-                      </TableCell>
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.slug}</TableCell>
                       <TableCell>{item.sortOrder}</TableCell>
                       <TableCell>
-                        {item.isActive === 1 ? "展示中" : "已隐藏"}
+                        {item.isActive === 1 ? "启用中" : "已停用"}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -269,7 +249,7 @@ export function BannerManager({
                             variant="outline"
                             onClick={() => handleToggle(item)}
                           >
-                            {item.isActive === 1 ? "隐藏" : "展示"}
+                            {item.isActive === 1 ? "停用" : "启用"}
                           </Button>
                           <Button
                             size="sm"
@@ -295,11 +275,9 @@ export function BannerManager({
             handleClose();
           }
         }}
-        title={drawerMode === "create" ? "新增 Banner" : "编辑 Banner"}
+        title={drawerMode === "create" ? "新增分类" : "编辑分类"}
         description={
-          drawerMode === "create"
-            ? "上传首页 Banner 并设置展示信息"
-            : "更新 Banner 的文案、排序与状态"
+          drawerMode === "create" ? "创建文章分类" : "更新分类信息与状态"
         }
         width={640}
         dirty={dirty}
@@ -312,81 +290,42 @@ export function BannerManager({
         }
       >
         <div className="space-y-4">
-          {drawerMode === "edit" && editingItem ? (
-            <div className="space-y-2">
-              <Label>当前图片</Label>
-              <QiniuImage
-                src={editingItem.imageUrl}
-                alt="banner"
-                className="h-40 w-full rounded object-cover"
-              />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label htmlFor="banner-image">图片</Label>
-              <Input
-                id="banner-image"
-                type="file"
-                accept="image/*"
-                onChange={(event) => {
-                  markDirty();
-                  setImageFile(event.target.files?.[0] ?? null);
-                }}
-              />
-            </div>
-          )}
           <div className="space-y-2">
-            <Label htmlFor="banner-link">跳转链接（可选）</Label>
+            <Label htmlFor="post-category-name">分类名称</Label>
             <Input
-              id="banner-link"
-              value={formValues.linkUrl}
+              id="post-category-name"
+              value={formValues.name}
               onChange={(event) => {
                 markDirty();
                 setFormValues((prev) => ({
                   ...prev,
-                  linkUrl: event.target.value,
+                  name: event.target.value,
                 }));
               }}
-              placeholder="https://example.com"
+              placeholder="输入分类名称"
             />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="banner-main-title">主标题（可选）</Label>
-              <Input
-                id="banner-main-title"
-                value={formValues.mainTitle}
-                onChange={(event) => {
-                  markDirty();
-                  setFormValues((prev) => ({
-                    ...prev,
-                    mainTitle: event.target.value,
-                  }));
-                }}
-                placeholder="输入主标题"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="banner-sub-title">副标题（可选）</Label>
-              <Input
-                id="banner-sub-title"
-                value={formValues.subTitle}
-                onChange={(event) => {
-                  markDirty();
-                  setFormValues((prev) => ({
-                    ...prev,
-                    subTitle: event.target.value,
-                  }));
-                }}
-                placeholder="输入副标题"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="post-category-slug">Slug（可选）</Label>
+            <Input
+              id="post-category-slug"
+              value={formValues.slug}
+              onChange={(event) => {
+                markDirty();
+                setFormValues((prev) => ({
+                  ...prev,
+                  slug: event.target.value,
+                }));
+              }}
+              placeholder="留空将根据名称自动生成"
+            />
+            <p className="text-xs text-slate-500">预览：{slugPreview || "-"}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="space-y-2">
-              <Label htmlFor="banner-order">排序</Label>
+              <Label htmlFor="post-category-order">排序</Label>
               <Input
-                id="banner-order"
+                id="post-category-order"
                 type="number"
                 value={formValues.sortOrder}
                 onChange={(event) => {
@@ -411,7 +350,7 @@ export function BannerManager({
                   }));
                 }}
               />
-              立即展示
+              启用分类
             </label>
           </div>
         </div>

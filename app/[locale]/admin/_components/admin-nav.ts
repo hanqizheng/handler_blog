@@ -8,6 +8,7 @@ import {
   ListIcon,
   PackageIcon,
   SettingsIcon,
+  TagIcon,
   UserIcon,
 } from "lucide-react";
 
@@ -24,6 +25,12 @@ export type AdminNavItem = {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: "/admin", label: "概览", icon: LayoutDashboardIcon, order: 0 },
   { href: "/admin/posts", label: "文章管理", icon: FileTextIcon, order: 10 },
+  {
+    href: "/admin/post-categories",
+    label: "分类管理",
+    icon: TagIcon,
+    order: 15,
+  },
   { href: "/admin/comments", label: "评论管理", icon: ListIcon, order: 20 },
   { href: "/admin/banners", label: "Banner 管理", icon: FileIcon, order: 30 },
   { href: "/admin/albums", label: "相册管理", icon: CameraIcon, order: 40 },
