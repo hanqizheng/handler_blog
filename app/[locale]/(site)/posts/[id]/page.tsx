@@ -1,13 +1,25 @@
 import { desc, eq } from "drizzle-orm";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { CommentSection } from "@/components/comment-section";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { SiteBackLink } from "@/components/site-back-link";
 import { db } from "@/db";
 import { commentCaptchaSettings, postCategories, posts } from "@/db/schema";
-import { CommentSection } from "@/components/comment-section";
 import { Link } from "@/i18n/navigation";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { buildPageMetadata, createTextExcerpt, resolveLocale } from "@/lib/seo";
 import { formatDateYmd } from "@/utils/date";
+
+type PostDetailParams = {
+  locale: string;
+  id: string;
+};
+
+type PostDetailPageProps = {
+  params: Promise<PostDetailParams>;
+};
 
 function parseId(rawId: string) {
   const id = Number(rawId);
@@ -17,33 +29,13 @@ function parseId(rawId: string) {
   return id;
 }
 
-export default async function PostDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const t = await getTranslations("site.postDetail");
-  const { id: rawId } = await params;
-  const id = parseId(rawId);
-
-  if (!id) {
-    return (
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        <p className="text-base font-medium text-slate-900">{t("notFound")}</p>
-        <SiteBackLink
-          fallbackHref="/posts"
-          label={t("backToPosts")}
-          className="mt-5"
-        />
-      </main>
-    );
-  }
-
+async function getPostItem(id: number) {
   const [item] = await db
     .select({
       id: posts.id,
       title: posts.title,
       content: posts.content,
+      coverImageUrl: posts.coverImageUrl,
       createdAt: posts.createdAt,
       categoryName: postCategories.name,
     })
@@ -51,25 +43,69 @@ export default async function PostDetailPage({
     .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
     .where(eq(posts.id, id))
     .limit(1);
+
+  return item ?? null;
+}
+
+export async function generateMetadata({
+  params,
+}: PostDetailPageProps): Promise<Metadata> {
+  const { locale: rawLocale, id: rawId } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: "site.postDetail" });
+  const id = parseId(rawId);
+
+  if (!id) {
+    return buildPageMetadata({
+      locale,
+      pathname: `/posts/${rawId}`,
+      title: t("notFound"),
+      description: t("notFound"),
+      noIndex: true,
+    });
+  }
+
+  const item = await getPostItem(id);
+  if (!item) {
+    return buildPageMetadata({
+      locale,
+      pathname: `/posts/${id}`,
+      title: t("notFound"),
+      description: t("notFound"),
+      noIndex: true,
+    });
+  }
+
+  return buildPageMetadata({
+    locale,
+    pathname: `/posts/${id}`,
+    title: item.title,
+    description: createTextExcerpt(item.content) || item.title,
+    image: item.coverImageUrl || undefined,
+    type: "article",
+  });
+}
+
+export default async function PostDetailPage({ params }: PostDetailPageProps) {
+  const t = await getTranslations("site.postDetail");
+  const { id: rawId } = await params;
+  const id = parseId(rawId);
+
+  if (!id) {
+    notFound();
+  }
+
+  const item = await getPostItem(id);
+  if (!item) {
+    notFound();
+  }
+
   const [captchaSetting] = await db
     .select({ isEnabled: commentCaptchaSettings.isEnabled })
     .from(commentCaptchaSettings)
     .orderBy(desc(commentCaptchaSettings.id))
     .limit(1);
   const captchaEnabled = (captchaSetting?.isEnabled ?? 0) === 1;
-
-  if (!item) {
-    return (
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        <p className="text-base font-medium text-slate-900">{t("notFound")}</p>
-        <SiteBackLink
-          fallbackHref="/posts"
-          label={t("backToPosts")}
-          className="mt-5"
-        />
-      </main>
-    );
-  }
 
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10">

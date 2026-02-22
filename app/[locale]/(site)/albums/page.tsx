@@ -1,10 +1,31 @@
 import { desc } from "drizzle-orm";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { db } from "@/db";
 import { photoAlbums } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
 import { QiniuImage } from "@/components/qiniu-image";
+import { buildPageMetadata, resolveLocale } from "@/lib/seo";
+
+type AlbumsPageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: AlbumsPageProps): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: "site.albums" });
+
+  return buildPageMetadata({
+    locale,
+    pathname: "/albums",
+    title: t("title"),
+    description: t("description"),
+  });
+}
 
 export default async function AlbumsPage() {
   const t = await getTranslations("site.albums");

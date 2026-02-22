@@ -1,11 +1,32 @@
 import { desc, eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { QiniuImage } from "@/components/qiniu-image";
 import { db } from "@/db";
 import { postCategories, posts } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
+import { buildPageMetadata, resolveLocale } from "@/lib/seo";
 import { formatDateYmd } from "@/utils/date";
+
+type PostsPageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: PostsPageProps): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: "site.posts" });
+
+  return buildPageMetadata({
+    locale,
+    pathname: "/posts",
+    title: t("title"),
+    description: t("description"),
+  });
+}
 
 export default async function PostsPage() {
   const t = await getTranslations("site.posts");
