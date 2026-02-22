@@ -131,9 +131,6 @@ export default async function HomePage() {
                           "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
                       }}
                     >
-                      <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        {t("bannerTag")}
-                      </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
                       </h1>
@@ -172,9 +169,6 @@ export default async function HomePage() {
                           "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
                       }}
                     >
-                      <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        {t("bannerTag")}
-                      </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
                       </h1>
