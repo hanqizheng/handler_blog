@@ -11,5 +11,7 @@ type QiniuImageProps = Omit<
 
 export function QiniuImage({ src, ...props }: QiniuImageProps) {
   if (!src) return null;
-  return <img src={getImageUrl(src)} {...props} />;
+  const { alt = "", ...restProps } = props;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={getImageUrl(src)} alt={alt} {...restProps} />;
 }

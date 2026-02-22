@@ -42,9 +42,8 @@ export function ImagePreviewGallery({
 }: ImagePreviewGalleryProps) {
   const normalizedImages = useMemo(
     () =>
-      images.filter(
-        (image): image is ImagePreviewItem =>
-          Boolean(image && image.src && image.src.trim()),
+      images.filter((image): image is ImagePreviewItem =>
+        Boolean(image && image.src && image.src.trim()),
       ),
     [images],
   );
@@ -52,7 +51,9 @@ export function ImagePreviewGallery({
   const [scale, setScale] = useState(MIN_SCALE);
 
   const currentImage =
-    activeIndex !== null ? normalizedImages[activeIndex] : null;
+    activeIndex !== null && activeIndex < normalizedImages.length
+      ? normalizedImages[activeIndex]
+      : null;
   const currentSrc = currentImage ? getImageUrl(currentImage.src) : "";
 
   const openAt = useCallback((index: number) => {
@@ -98,16 +99,16 @@ export function ImagePreviewGallery({
   }, []);
 
   useEffect(() => {
-    if (activeIndex === null) return;
+    if (!currentImage) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, [activeIndex]);
+  }, [currentImage]);
 
   useEffect(() => {
-    if (activeIndex === null) return;
+    if (!currentImage) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -143,18 +144,7 @@ export function ImagePreviewGallery({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeIndex, close, goNext, goPrev, resetZoom, zoomIn, zoomOut]);
-
-  useEffect(() => {
-    if (activeIndex === null) return;
-    if (normalizedImages.length === 0) {
-      setActiveIndex(null);
-      return;
-    }
-    if (activeIndex >= normalizedImages.length) {
-      setActiveIndex(normalizedImages.length - 1);
-    }
-  }, [activeIndex, normalizedImages.length]);
+  }, [close, currentImage, goNext, goPrev, resetZoom, zoomIn, zoomOut]);
 
   if (normalizedImages.length === 0) {
     return null;
@@ -166,10 +156,7 @@ export function ImagePreviewGallery({
   return (
     <>
       <div
-        className={cn(
-          "columns-1 gap-x-6 sm:columns-2 lg:columns-3",
-          className,
-        )}
+        className={cn("columns-1 gap-x-6 sm:columns-2 lg:columns-3", className)}
       >
         {normalizedImages.map((image, index) => (
           <button
@@ -290,10 +277,11 @@ export function ImagePreviewGallery({
             </div>
             <div className="flex flex-1 items-center justify-center px-4 py-6">
               {currentSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={currentSrc}
                   alt={currentImage.alt ?? ""}
-                  className="max-h-[80vh] max-w-[92vw] select-none object-contain"
+                  className="max-h-[80vh] max-w-[92vw] object-contain select-none"
                   style={{ transform: `scale(${scale})` }}
                   onClick={(event) => event.stopPropagation()}
                 />

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const useControllableValue = <T>(
   controlledValue: T | undefined,
@@ -11,7 +11,10 @@ export const useControllableValue = <T>(
     ? (controlledValue as T)
     : uncontrolledValue;
   const valueRef = useRef(currentValue);
-  valueRef.current = currentValue;
+
+  useEffect(() => {
+    valueRef.current = currentValue;
+  }, [currentValue]);
 
   const setValue = useCallback(
     (updater: T | ((prev: T) => T)) => {
@@ -22,11 +25,9 @@ export const useControllableValue = <T>(
 
       if (!isControlled) {
         setUncontrolledValue(nextValue);
-        valueRef.current = nextValue;
-      } else {
-        valueRef.current = nextValue;
       }
 
+      valueRef.current = nextValue;
       onChange?.(nextValue);
     },
     [isControlled, onChange],

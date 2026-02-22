@@ -113,17 +113,20 @@ export const MarkdownEditor = React.forwardRef<
     if (markdownValue === lastSyncedMarkdownRef.current) {
       return;
     }
+    // Sync external controlled value into Slate state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditorValue(deserializeFromMarkdown(markdownValue));
     lastSyncedMarkdownRef.current = markdownValue;
     setSlateVersion((prev) => prev + 1);
   }, [markdownValue]);
 
   useEffect(() => {
+    const pendingImages = pendingImagesRef.current;
     return () => {
-      pendingImagesRef.current.forEach((_, url) => {
+      pendingImages.forEach((_, url) => {
         URL.revokeObjectURL(url);
       });
-      pendingImagesRef.current.clear();
+      pendingImages.clear();
     };
   }, []);
 
@@ -147,7 +150,7 @@ export const MarkdownEditor = React.forwardRef<
       lastSyncedMarkdownRef.current = markdown;
       setMarkdownValue(markdown);
     },
-    [disabled, readOnly, setMarkdownValue],
+    [disabled, editor.selection, readOnly, setMarkdownValue],
   );
 
   const insertImageFiles = useCallback(
@@ -156,9 +159,7 @@ export const MarkdownEditor = React.forwardRef<
         return;
       }
 
-      const imageFiles = files.filter((file) =>
-        file.type.startsWith("image/"),
-      );
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
       if (imageFiles.length === 0) {
         return;
       }
@@ -316,7 +317,7 @@ export const MarkdownEditor = React.forwardRef<
         Transforms.insertFragment(editor, nodes);
       }
     },
-    [disabled, insertImageFiles, readOnly, imageUploadEnabled],
+    [disabled, editor, imageUploadEnabled, insertImageFiles, readOnly],
   );
 
   const handleDrop = useCallback(

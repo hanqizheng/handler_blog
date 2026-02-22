@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -56,9 +57,11 @@ export function SiteNavigation() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
-          <img
+          <Image
             src="/brand/logo.svg"
             alt={tCommon("logoAlt")}
+            width={160}
+            height={40}
             className="h-10 w-auto"
           />
         </Link>

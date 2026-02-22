@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { LinkIcon } from "lucide-react";
 
@@ -19,7 +20,13 @@ export async function SiteFooter() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-8 md:grid-cols-[1.3fr_1fr_1fr]">
           <div className="space-y-4">
-            <img alt={siteName} className="h-10 w-auto" src="/brand/logo.svg" />
+            <Image
+              src="/brand/logo.svg"
+              alt={siteName}
+              width={160}
+              height={40}
+              className="h-10 w-auto"
+            />
             <p className="max-w-xs text-sm leading-relaxed text-slate-600">
               {t("tagline")}
             </p>
