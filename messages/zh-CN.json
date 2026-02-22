@@ -44,7 +44,7 @@
       "noCover": "暂无封面",
       "productsTag": "Products",
       "productsTitle": "个人产品",
-      "productsDescription": "以体验为中心的产品，鹄说不鹄做",
+      "productsDescription": "养老靠“春座”，从“AIAIG”看世界",
       "emptyProducts": "暂无产品信息",
       "productFeatured": "精选产品",
       "productNoDescription": "暂无描述",
@@ -77,7 +77,9 @@
     "about": {
       "eyebrow": "Hu Teng",
       "title": "关于我",
-      "description": "从个人主页到独立经纪，从互联网到海外置业，记录一条更真实、更自我的路线。",
+      "description": "个人网站的第一版是2004年，22年后想重新记录自己",
+      "description2": "在乎个人主权. 思想独立；",
+      "description3": "以自己为核心，其它平台只是工具；",
       "profileTitle": "个人简介",
       "profileBadge": "主页",
       "emptyProfile": "暂无个人简介内容"

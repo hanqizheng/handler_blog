@@ -70,6 +70,12 @@ export default async function AboutPage() {
         <p className="mt-3 max-w-2xl text-sm text-slate-600">
           {t("description")}
         </p>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          {t("description2")}
+        </p>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          {t("description3")}
+        </p>
 
         <div className="mt-10 flex w-full flex-col gap-10">
           {hasProfile ? (
