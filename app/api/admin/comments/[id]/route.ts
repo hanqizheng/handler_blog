@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { comments } from "@/db/schema";
+import { getAdminSession } from "@/lib/admin-auth";
 import { normalizeCommentContent } from "@/utils/comments";
 
 export const runtime = "nodejs";
@@ -20,6 +21,14 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json(
+      { ok: false, error: "unauthorized" },
+      { status: 401 },
+    );
+  }
+
   const { id: rawId } = await context.params;
   const id = parseId(rawId);
   if (!id) {
@@ -58,6 +67,14 @@ export async function DELETE(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json(
+      { ok: false, error: "unauthorized" },
+      { status: 401 },
+    );
+  }
+
   const { id: rawId } = await context.params;
   const id = parseId(rawId);
   if (!id) {

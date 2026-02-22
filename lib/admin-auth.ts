@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
+
+import { db } from "@/db";
+import { adminUsers } from "@/db/schema";
 
 const SESSION_COOKIE_NAME = "admin-session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -128,7 +132,26 @@ export const verifyAdminSessionToken = (token: string | undefined | null) => {
 
 export const getAdminSession = async () => {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
-  return verifyAdminSessionToken(token);
+  const session = verifyAdminSessionToken(token);
+  if (!session) {
+    return null;
+  }
+
+  if (session.actorType === "dev") {
+    return session;
+  }
+
+  const [user] = await db
+    .select({ id: adminUsers.id })
+    .from(adminUsers)
+    .where(eq(adminUsers.id, session.sub))
+    .limit(1);
+
+  if (!user) {
+    return null;
+  }
+
+  return session;
 };
 
 export const buildAdminSessionCookie = (token: string) => {

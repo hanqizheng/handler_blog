@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
       const result = await tx
         .insert(adminUsers)
-        .values({ email, passwordHash })
+        .values({ email, passwordHash, role: "owner", createdBy: null })
         .execute();
 
       const userId =
