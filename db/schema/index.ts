@@ -3,6 +3,7 @@ export * from "./comments";
 export * from "./comment-captcha-states";
 export * from "./comment-captcha-settings";
 export * from "./admin-users";
+export * from "./admin-user-invitations";
 export * from "./banners";
 export * from "./photo-albums";
 export * from "./photo-album-photos";
