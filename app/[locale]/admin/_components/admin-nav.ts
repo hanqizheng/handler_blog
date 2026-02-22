@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   TagIcon,
   UserIcon,
+  UsersIcon,
 } from "lucide-react";
 
 export const ADMIN_ROOT_PATH = "/admin";
@@ -42,5 +43,6 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
     order: 60,
   },
   { href: "/admin/about", label: "个人简介", icon: UserIcon, order: 70 },
+  { href: "/admin/users", label: "管理员管理", icon: UsersIcon, order: 75 },
   { href: "/admin/security", label: "安全设置", icon: SettingsIcon, order: 80 },
 ];

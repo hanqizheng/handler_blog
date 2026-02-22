@@ -54,3 +54,33 @@ node -e 'const { randomBytes, scryptSync } = require("node:crypto"); const p = p
 Production note:
 
 - Dev admin login is ignored unless `NODE_ENV=development`.
+- `ADMIN_INVITATION_EXPIRES_MINUTES` controls owner invitation expiry window (default 15 minutes).
+
+## Admin collaboration in production
+
+### Owner-managed invitation flow (recommended)
+
+1. Login with an owner account and open `/admin/users`.
+2. Generate an invitation link for the target email.
+3. Send the one-time link via a secure channel.
+4. Invitee opens `/admin/accept-invitation?token=...`, sets password, then is auto-logged-in.
+5. Invitee should immediately bind TOTP in `/admin/security`.
+
+### Emergency manual provisioning SOP (no code path)
+
+If owner invitation is temporarily unavailable, you can provision directly in DB:
+
+1. Generate a password hash using the same scrypt format used by this project.
+2. Insert the admin user with role `admin`:
+
+```sql
+INSERT INTO admin_users (email, password_hash, totp_secret, role, created_by)
+VALUES ('new-admin@example.com', '<scrypt hash>', '', 'admin', <owner_id>);
+```
+
+3. Share credentials over a secure channel and require immediate TOTP binding.
+4. Revoke access when needed:
+
+```sql
+DELETE FROM admin_users WHERE email = 'new-admin@example.com';
+```
