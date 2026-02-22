@@ -1,10 +1,10 @@
 {
   "app": {
-    "name": "handler_blog"
+    "name": "Site"
   },
   "site": {
     "common": {
-      "logoAlt": "Huteng"
+      "logoAlt": "网站 Logo"
     },
     "nav": {
       "home": "首页",
@@ -27,14 +27,14 @@
         "aiaig": "AIAIG",
         "chunzuo": "春座"
       },
-      "copyright": "© {year} Huteng. All rights reserved."
+      "copyright": "© {year} {siteName}。保留所有权利。"
     },
     "home": {
-      "heroTag": "Handler Blog",
+      "heroTag": "Site",
       "heroTitle": "用设计感，讲好每一篇故事。",
       "heroDescription": "用文字、影像与产品共同塑造你的品牌气质。",
       "bannerTag": "Banner",
-      "bannerFallbackTitle": "Handler Blog",
+      "bannerFallbackTitle": "Site",
       "bannerFallbackSubtitle": "用设计感写下每一次灵感。",
       "latestTag": "Latest Posts",
       "latestTitle": "鹄说",
@@ -65,6 +65,7 @@
     },
     "albums": {
       "title": "相册列表",
+      "description": "按主题整理的影像记录与相册归档。",
       "empty": "暂无相册",
       "noCover": "暂无封面"
     },

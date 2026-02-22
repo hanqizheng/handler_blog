@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { LOCALES } from "@/constants/i18n";
 import { siteNavItems } from "@/constants/site";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { getSiteName } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/types/i18n";
 
@@ -18,7 +19,7 @@ const localeLabelKeys: Record<Locale, "locale.zh-CN" | "locale.en"> = {
 export function SiteNavigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const t = useTranslations("site.nav");
-  const commonT = useTranslations("site.common");
+  const siteName = getSiteName();
   const locale = useLocale() as Locale;
   const pathname = usePathname();
   const router = useRouter();
@@ -56,11 +57,7 @@ export function SiteNavigation() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
-          <img
-            src="/brand/logo.svg"
-            alt={commonT("logoAlt")}
-            className="h-10 w-auto"
-          />
+          <img src="/brand/logo.svg" alt={siteName} className="h-10 w-auto" />
         </Link>
         <nav
           className={`flex items-center gap-4 text-xs font-semibold sm:gap-6 sm:text-sm ${

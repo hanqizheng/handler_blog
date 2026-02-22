@@ -1,10 +1,10 @@
 {
   "app": {
-    "name": "handler_blog"
+    "name": "Site"
   },
   "site": {
     "common": {
-      "logoAlt": "Huteng"
+      "logoAlt": "Site Logo"
     },
     "nav": {
       "home": "Home",
@@ -27,14 +27,14 @@
         "aiaig": "AIAIG",
         "chunzuo": "Chunzuo"
       },
-      "copyright": "© {year} Huteng. All rights reserved."
+      "copyright": "© {year} {siteName}. All rights reserved."
     },
     "home": {
-      "heroTag": "Handler Blog",
+      "heroTag": "Site",
       "heroTitle": "Tell every story with a strong design sense.",
       "heroDescription": "Shape your brand voice through writing, visuals, and products.",
       "bannerTag": "Banner",
-      "bannerFallbackTitle": "Handler Blog",
+      "bannerFallbackTitle": "Site",
       "bannerFallbackSubtitle": "Capture every spark with thoughtful design.",
       "latestTag": "Latest Posts",
       "latestTitle": "Insights",
@@ -65,6 +65,7 @@
     },
     "albums": {
       "title": "Albums",
+      "description": "A curated collection of visual stories and albums.",
       "empty": "No albums yet.",
       "noCover": "No cover image"
     },

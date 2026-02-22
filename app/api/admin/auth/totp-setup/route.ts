@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-auth";
+import { getSiteName } from "@/lib/seo";
 import { buildOtpAuthUri, generateTotpSecret, verifyTotpToken } from "@/lib/totp";
 
 export const runtime = "nodejs";
@@ -38,7 +39,7 @@ export async function GET() {
   const otpauth = buildOtpAuthUri({
     secret,
     label: `${user.email}`,
-    issuer: process.env.ADMIN_AUTH_ISSUER?.trim() || "handler_blog",
+    issuer: process.env.ADMIN_AUTH_ISSUER?.trim() || getSiteName(),
   });
 
   return NextResponse.json({ ok: true, enabled: false, secret, otpauth });

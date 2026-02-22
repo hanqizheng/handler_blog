@@ -1,5 +1,15 @@
 # Blog
 
+## Branding & SEO
+
+Configure these in `.env.local` / production env to control site display and SEO
+branding text:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SITE_NAME`
+- `NEXT_PUBLIC_SITE_DESCRIPTION_ZH`
+- `NEXT_PUBLIC_SITE_DESCRIPTION_EN`
+
 ## Database workflow (Drizzle + MySQL)
 
 1. Configure `DATABASE_URL` in `.env.local` (see `.env.example`).
