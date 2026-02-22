@@ -1,57 +1,11 @@
 import { getAdminSession } from "@/lib/admin-auth";
-import { createBucketManager, getServerQiniuConfig } from "@/lib/qiniu";
+import {
+  createBucketManager,
+  extractQiniuObjectKey,
+  getServerQiniuConfig,
+} from "@/lib/qiniu";
 
 export const runtime = "nodejs";
-
-const extractKeyFromUrl = (input: string, displayDomain?: string) => {
-  if (!input) return "";
-  const normalizePath = (value: string) => value.replace(/^\/+/, "");
-  const stripDisplayPrefix = (path: string, base?: string) => {
-    if (!base) return path;
-    const normalizedBase = base.replace(/^\/+|\/+$/g, "");
-    if (normalizedBase && path.startsWith(`${normalizedBase}/`)) {
-      return path.slice(normalizedBase.length + 1);
-    }
-    return path;
-  };
-
-  if (!/^https?:\/\//.test(input)) {
-    const rawPath = normalizePath(input);
-    if (!displayDomain) {
-      return rawPath;
-    }
-    try {
-      const baseUrl = new URL(displayDomain);
-      return stripDisplayPrefix(
-        rawPath,
-        baseUrl.pathname.replace(/^\/+|\/+$/g, ""),
-      );
-    } catch {
-      return stripDisplayPrefix(rawPath, displayDomain);
-    }
-  }
-
-  let url: URL;
-  try {
-    url = new URL(input);
-  } catch {
-    return input.replace(/^\/+/, "");
-  }
-
-  const path = normalizePath(url.pathname);
-  if (!displayDomain) return path;
-
-  if (displayDomain) {
-    try {
-      const baseUrl = new URL(displayDomain);
-      return stripDisplayPrefix(path, baseUrl.pathname);
-    } catch {
-      return stripDisplayPrefix(path, displayDomain);
-    }
-  }
-
-  return path;
-};
 
 export async function POST(request: Request) {
   const session = await getAdminSession();
@@ -91,7 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const key = extractKeyFromUrl(rawKey, qiniuConfig.displayDomain);
+  const key = extractQiniuObjectKey(rawKey, qiniuConfig.displayDomain);
   if (!key) {
     return Response.json(
       { ok: false, error: "无法解析文件路径" },

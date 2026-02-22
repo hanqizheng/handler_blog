@@ -35,6 +35,54 @@ const normalizeUploadDomain = (domain: string) => {
   return `https://${trimmed}`;
 };
 
+const normalizePath = (value: string) => value.replace(/^\/+/, "");
+
+const stripDisplayPrefix = (path: string, base?: string) => {
+  if (!base) return path;
+  const normalizedBase = base.replace(/^\/+|\/+$/g, "");
+  if (normalizedBase && path.startsWith(`${normalizedBase}/`)) {
+    return path.slice(normalizedBase.length + 1);
+  }
+  return path;
+};
+
+export const extractQiniuObjectKey = (input: string, displayDomain?: string) => {
+  if (!input) return "";
+
+  if (!/^https?:\/\//.test(input)) {
+    const rawPath = normalizePath(input);
+    if (!displayDomain) {
+      return rawPath;
+    }
+    try {
+      const baseUrl = new URL(displayDomain);
+      return stripDisplayPrefix(
+        rawPath,
+        baseUrl.pathname.replace(/^\/+|\/+$/g, ""),
+      );
+    } catch {
+      return stripDisplayPrefix(rawPath, displayDomain);
+    }
+  }
+
+  let url: URL;
+  try {
+    url = new URL(input);
+  } catch {
+    return normalizePath(input);
+  }
+
+  const path = normalizePath(url.pathname);
+  if (!displayDomain) return path;
+
+  try {
+    const baseUrl = new URL(displayDomain);
+    return stripDisplayPrefix(path, baseUrl.pathname);
+  } catch {
+    return stripDisplayPrefix(path, displayDomain);
+  }
+};
+
 const resolveZone = (region?: string) => {
   if (!region) return undefined;
   const zone = REGION_ZONE_MAP[region as QiniuRegion];

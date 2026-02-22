@@ -29,6 +29,13 @@
       "when": 1771766400000,
       "tag": "0003_admin_user_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1771766400001,
+      "tag": "0004_qiniu_delete_tasks",
+      "breakpoints": true
     }
   ]
 }

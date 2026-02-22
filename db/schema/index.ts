@@ -7,6 +7,7 @@ export * from "./admin-user-invitations";
 export * from "./banners";
 export * from "./photo-albums";
 export * from "./photo-album-photos";
+export * from "./qiniu-delete-tasks";
 export * from "./products";
 export * from "./site-profiles";
 export * from "./friend-links";
