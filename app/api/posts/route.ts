@@ -1,7 +1,7 @@
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { posts } from "@/db/schema";
+import { postCategories, posts } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     content?: unknown;
     assetFolder?: unknown;
     coverImageUrl?: unknown;
+    categoryId?: unknown;
   };
   const title = typeof data?.title === "string" ? data.title.trim() : "";
   const content = typeof data?.content === "string" ? data.content.trim() : "";
@@ -37,10 +38,31 @@ export async function POST(request: Request) {
     typeof data?.assetFolder === "string" ? data.assetFolder.trim() : "";
   const coverImageUrl =
     typeof data?.coverImageUrl === "string" ? data.coverImageUrl.trim() : "";
+  const categoryId =
+    typeof data?.categoryId === "number"
+      ? data.categoryId
+      : Number(data?.categoryId ?? 0);
 
-  if (!title || !content) {
+  if (
+    !title ||
+    !content ||
+    !Number.isInteger(categoryId) ||
+    Number(categoryId) <= 0
+  ) {
     return Response.json(
-      { ok: false, error: "title and content are required" },
+      { ok: false, error: "title, content and categoryId are required" },
+      { status: 400 },
+    );
+  }
+
+  const [category] = await db
+    .select({ id: postCategories.id })
+    .from(postCategories)
+    .where(eq(postCategories.id, categoryId))
+    .limit(1);
+  if (!category) {
+    return Response.json(
+      { ok: false, error: "category not found" },
       { status: 400 },
     );
   }
@@ -52,6 +74,7 @@ export async function POST(request: Request) {
     content,
     assetFolder: resolvedAssetFolder,
     coverImageUrl,
+    categoryId,
   });
 
   return Response.json({ ok: true });

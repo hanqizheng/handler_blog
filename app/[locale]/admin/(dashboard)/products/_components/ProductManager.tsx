@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
+import { QiniuImage } from "@/components/qiniu-image";
+import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
+import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,8 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { QiniuImage } from "@/components/qiniu-image";
-import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 
 type ProductItem = {
   id: number;
@@ -28,29 +32,32 @@ type ProductItem = {
 };
 
 interface ProductManagerProps {
-  initialItems: ProductItem[];
+  items: ProductItem[];
+  drawerMode: "create" | "edit" | null;
+  editingItem: ProductItem | null;
 }
 
-export function ProductManager({ initialItems }: ProductManagerProps) {
-  const [items, setItems] = useState<ProductItem[]>(initialItems);
+const DEFAULT_FORM = {
+  name: "",
+  description: "",
+  logoUrl: "",
+  linkUrl: "",
+  sortOrder: "0",
+  isActive: true,
+};
+
+export function ProductManager({
+  items,
+  drawerMode,
+  editingItem,
+}: ProductManagerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [formValues, setFormValues] = useState(DEFAULT_FORM);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoUrl, setLogoUrl] = useState("");
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
-  const [sortOrder, setSortOrder] = useState("0");
-  const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editValues, setEditValues] = useState({
-    name: "",
-    description: "",
-    logoUrl: "",
-    linkUrl: "",
-    sortOrder: "0",
-    isActive: true,
-  });
+  const [dirty, setDirty] = useState(false);
 
   const { uploadFile } = useQiniuUpload({
     allowedTypes: ["image/*"],
@@ -61,62 +68,44 @@ export function ProductManager({ initialItems }: ProductManagerProps) {
     return [...items].sort((a, b) => a.sortOrder - b.sortOrder || b.id - a.id);
   }, [items]);
 
-  const refreshItems = async () => {
-    const response = await fetch("/api/admin/products");
-    const data = (await response.json().catch(() => null)) as {
-      ok?: boolean;
-      items?: ProductItem[];
-    } | null;
-    if (response.ok && data?.ok && data.items) {
-      setItems(data.items);
+  useEffect(() => {
+    if (drawerMode === "edit" && editingItem) {
+      setFormValues({
+        name: editingItem.name ?? "",
+        description: editingItem.description ?? "",
+        logoUrl: editingItem.logoUrl ?? "",
+        linkUrl: editingItem.linkUrl ?? "",
+        sortOrder: String(editingItem.sortOrder ?? 0),
+        isActive: editingItem.isActive === 1,
+      });
+    } else {
+      setFormValues(DEFAULT_FORM);
+    }
+    setLogoFile(null);
+    setDirty(false);
+  }, [drawerMode, editingItem]);
+
+  const navigateDrawer = useCallback(
+    (mode: "create" | "edit" | null, id?: number | null) => {
+      const nextUrl = buildDrawerUrl(
+        pathname,
+        new URLSearchParams(searchParams.toString()),
+        mode,
+        id,
+      );
+      router.push(nextUrl);
+    },
+    [pathname, router, searchParams],
+  );
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
     }
   };
 
-  const handleCreate = async () => {
-    if (!name.trim()) {
-      alert("请输入产品名称");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      let resolvedLogoUrl = logoUrl.trim();
-      if (logoFile) {
-        const uploadResult = await uploadFile(logoFile);
-        resolvedLogoUrl = uploadResult.url;
-      }
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          logoUrl: resolvedLogoUrl,
-          linkUrl: linkUrl.trim(),
-          sortOrder: Number(sortOrder) || 0,
-          isActive,
-        }),
-      });
-      const data = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || "创建失败");
-      }
-      setLogoFile(null);
-      setLogoUrl("");
-      setName("");
-      setDescription("");
-      setLinkUrl("");
-      setSortOrder("0");
-      setIsActive(true);
-      await refreshItems();
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "创建失败");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleClose = () => {
+    navigateDrawer(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -132,7 +121,7 @@ export function ProductManager({ initialItems }: ProductManagerProps) {
       alert(data?.error || "删除失败");
       return;
     }
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    router.refresh();
   };
 
   const handleToggle = async (item: ProductItem) => {
@@ -149,172 +138,113 @@ export function ProductManager({ initialItems }: ProductManagerProps) {
       alert(data?.error || "更新失败");
       return;
     }
-    await refreshItems();
+    router.refresh();
   };
 
-  const startEdit = (item: ProductItem) => {
-    setEditingId(item.id);
-    setEditValues({
-      name: item.name ?? "",
-      description: item.description ?? "",
-      logoUrl: item.logoUrl ?? "",
-      linkUrl: item.linkUrl ?? "",
-      sortOrder: String(item.sortOrder ?? 0),
-      isActive: item.isActive === 1,
-    });
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setIsSaving(false);
-  };
-
-  const saveEdit = async (id: number) => {
-    if (!editValues.name.trim()) {
+  const handleSubmit = async () => {
+    if (!formValues.name.trim()) {
       alert("请输入产品名称");
       return;
     }
-    setIsSaving(true);
+
+    setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editValues.name.trim(),
-          description: editValues.description.trim(),
-          logoUrl: editValues.logoUrl.trim(),
-          linkUrl: editValues.linkUrl.trim(),
-          sortOrder: Number(editValues.sortOrder) || 0,
-          isActive: editValues.isActive,
-        }),
-      });
-      const data = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || "更新失败");
+      let resolvedLogoUrl = formValues.logoUrl.trim();
+      if (logoFile) {
+        const uploadResult = await uploadFile(logoFile);
+        resolvedLogoUrl = uploadResult.url;
       }
-      setEditingId(null);
-      await refreshItems();
+
+      if (drawerMode === "create") {
+        const response = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formValues.name.trim(),
+            description: formValues.description.trim(),
+            logoUrl: resolvedLogoUrl,
+            linkUrl: formValues.linkUrl.trim(),
+            sortOrder: Number(formValues.sortOrder) || 0,
+            isActive: formValues.isActive,
+          }),
+        });
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+        } | null;
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "创建失败");
+        }
+      } else if (drawerMode === "edit" && editingItem) {
+        const response = await fetch(`/api/admin/products/${editingItem.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formValues.name.trim(),
+            description: formValues.description.trim(),
+            logoUrl: resolvedLogoUrl,
+            linkUrl: formValues.linkUrl.trim(),
+            sortOrder: Number(formValues.sortOrder) || 0,
+            isActive: formValues.isActive,
+          }),
+        });
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+        } | null;
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "更新失败");
+        }
+      }
+
+      setDirty(false);
+      navigateDrawer(null);
+      router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "更新失败");
+      alert(error instanceof Error ? error.message : "保存失败");
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
+  const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
+  const previewLogo = formValues.logoUrl || editingItem?.logoUrl || "";
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>新增产品</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="product-logo">产品 Logo（可选）</Label>
-            <Input
-              id="product-logo"
-              type="file"
-              accept="image/*"
-              onChange={(event) => setLogoFile(event.target.files?.[0] ?? null)}
-            />
-            <Input
-              value={logoUrl}
-              onChange={(event) => setLogoUrl(event.target.value)}
-              placeholder="或直接填写 Logo 图片链接"
-            />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="product-name">名称</Label>
-              <Input
-                id="product-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                placeholder="输入产品名称"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-link">跳转链接（可选）</Label>
-              <Input
-                id="product-link"
-                value={linkUrl}
-                onChange={(event) => setLinkUrl(event.target.value)}
-                placeholder="https://example.com"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="product-description">描述（可选）</Label>
-            <Input
-              id="product-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="一句话描述产品"
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="product-order">排序</Label>
-              <Input
-                id="product-order"
-                type="number"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
-                className="w-32"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(event) => setIsActive(event.target.checked)}
-              />
-              立即展示
-            </label>
-          </div>
-          <Button onClick={handleCreate} disabled={isSubmitting}>
-            {isSubmitting ? "保存中..." : "创建产品"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>产品列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Logo</TableHead>
-                <TableHead>名称</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>链接</TableHead>
-                <TableHead>排序</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="w-56">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedItems.length === 0 ? (
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-end">
+          <Button onClick={() => navigateDrawer("create")}>新增产品</Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>产品列表</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7}>暂无产品</TableCell>
+                  <TableHead>Logo</TableHead>
+                  <TableHead>名称</TableHead>
+                  <TableHead>描述</TableHead>
+                  <TableHead>链接</TableHead>
+                  <TableHead>排序</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead className="w-56">操作</TableHead>
                 </TableRow>
-              ) : (
-                sortedItems.map((item) => {
-                  const previewLogo =
-                    editingId === item.id && editValues.logoUrl
-                      ? editValues.logoUrl
-                      : item.logoUrl;
-
-                  return (
+              </TableHeader>
+              <TableBody>
+                {sortedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7}>暂无产品</TableCell>
+                  </TableRow>
+                ) : (
+                  sortedItems.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {previewLogo ? (
+                        {item.logoUrl ? (
                           <QiniuImage
-                            src={previewLogo}
+                            src={item.logoUrl}
                             alt={item.name}
                             className="h-12 w-12 rounded-full object-cover"
                           />
@@ -324,157 +254,188 @@ export function ProductManager({ initialItems }: ProductManagerProps) {
                           </div>
                         )}
                       </TableCell>
-                      {editingId === item.id ? (
-                        <>
-                          <TableCell>
-                            <Input
-                              value={editValues.name}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  name: event.target.value,
-                                }))
-                              }
-                              placeholder="产品名称"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={editValues.description}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  description: event.target.value,
-                                }))
-                              }
-                              placeholder="产品描述"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="space-y-2">
-                              <Input
-                                value={editValues.linkUrl}
-                                onChange={(event) =>
-                                  setEditValues((prev) => ({
-                                    ...prev,
-                                    linkUrl: event.target.value,
-                                  }))
-                                }
-                                placeholder="https://example.com"
-                              />
-                              <Input
-                                value={editValues.logoUrl}
-                                onChange={(event) =>
-                                  setEditValues((prev) => ({
-                                    ...prev,
-                                    logoUrl: event.target.value,
-                                  }))
-                                }
-                                placeholder="Logo 图片链接"
-                              />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              value={editValues.sortOrder}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  sortOrder: event.target.value,
-                                }))
-                              }
-                              className="w-24"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <label className="flex items-center gap-2 text-sm text-slate-600">
-                              <input
-                                type="checkbox"
-                                checked={editValues.isActive}
-                                onChange={(event) =>
-                                  setEditValues((prev) => ({
-                                    ...prev,
-                                    isActive: event.target.checked,
-                                  }))
-                                }
-                              />
-                              {editValues.isActive ? "展示中" : "已隐藏"}
-                            </label>
-                          </TableCell>
-                        </>
-                      ) : (
-                        <>
-                          <TableCell className="max-w-48 truncate font-medium">
-                            {item.name}
-                          </TableCell>
-                          <TableCell className="max-w-60 truncate text-sm text-slate-600">
-                            {item.description || "-"}
-                          </TableCell>
-                          <TableCell className="max-w-60 truncate">
-                            {item.linkUrl || "-"}
-                          </TableCell>
-                          <TableCell>{item.sortOrder}</TableCell>
-                          <TableCell>
-                            {item.isActive === 1 ? "展示中" : "已隐藏"}
-                          </TableCell>
-                        </>
-                      )}
+                      <TableCell className="max-w-48 truncate font-medium">
+                        {item.name}
+                      </TableCell>
+                      <TableCell className="max-w-60 truncate text-sm text-slate-600">
+                        {item.description || "-"}
+                      </TableCell>
+                      <TableCell className="max-w-60 truncate">
+                        {item.linkUrl || "-"}
+                      </TableCell>
+                      <TableCell>{item.sortOrder}</TableCell>
+                      <TableCell>
+                        {item.isActive === 1 ? "展示中" : "已隐藏"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {editingId === item.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => saveEdit(item.id)}
-                                disabled={isSaving}
-                              >
-                                {isSaving ? "保存中..." : "保存"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={cancelEdit}
-                                disabled={isSaving}
-                              >
-                                取消
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => startEdit(item)}
-                              >
-                                编辑
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleToggle(item)}
-                              >
-                                {item.isActive === 1 ? "隐藏" : "展示"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDelete(item.id)}
-                              >
-                                删除
-                              </Button>
-                            </>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigateDrawer("edit", item.id)}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggle(item)}
+                          >
+                            {item.isActive === 1 ? "隐藏" : "展示"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            删除
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+      <AdminFormDrawer
+        open={isDrawerOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleClose();
+          }
+        }}
+        title={drawerMode === "create" ? "新增产品" : "编辑产品"}
+        description={
+          drawerMode === "create" ? "创建产品展示信息" : "更新产品内容与排序"
+        }
+        width={640}
+        dirty={dirty}
+        footer={
+          <AdminDrawerActions
+            submitting={isSubmitting}
+            onCancel={handleClose}
+            onConfirm={handleSubmit}
+          />
+        }
+      >
+        <div className="space-y-4">
+          {previewLogo ? (
+            <div className="space-y-2">
+              <Label>Logo 预览</Label>
+              <QiniuImage
+                src={previewLogo}
+                alt="product logo"
+                className="h-16 w-16 rounded-full object-cover"
+              />
+            </div>
+          ) : null}
+          <div className="space-y-2">
+            <Label htmlFor="product-logo-file">产品 Logo（可选）</Label>
+            <Input
+              id="product-logo-file"
+              type="file"
+              accept="image/*"
+              onChange={(event) => {
+                markDirty();
+                setLogoFile(event.target.files?.[0] ?? null);
+              }}
+            />
+            <Input
+              value={formValues.logoUrl}
+              onChange={(event) => {
+                markDirty();
+                setFormValues((prev) => ({
+                  ...prev,
+                  logoUrl: event.target.value,
+                }));
+              }}
+              placeholder="或直接填写 Logo 图片链接"
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="product-name">名称</Label>
+              <Input
+                id="product-name"
+                value={formValues.name}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    name: event.target.value,
+                  }));
+                }}
+                placeholder="输入产品名称"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="product-link">跳转链接（可选）</Label>
+              <Input
+                id="product-link"
+                value={formValues.linkUrl}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    linkUrl: event.target.value,
+                  }));
+                }}
+                placeholder="https://example.com"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="product-description">描述（可选）</Label>
+            <Input
+              id="product-description"
+              value={formValues.description}
+              onChange={(event) => {
+                markDirty();
+                setFormValues((prev) => ({
+                  ...prev,
+                  description: event.target.value,
+                }));
+              }}
+              placeholder="一句话描述产品"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="product-order">排序</Label>
+              <Input
+                id="product-order"
+                type="number"
+                value={formValues.sortOrder}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    sortOrder: event.target.value,
+                  }));
+                }}
+                className="w-32"
+              />
+            </div>
+            <label className="flex items-center gap-2 pt-6 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={formValues.isActive}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    isActive: event.target.checked,
+                  }));
+                }}
+              />
+              立即展示
+            </label>
+          </div>
+        </div>
+      </AdminFormDrawer>
+    </>
   );
 }

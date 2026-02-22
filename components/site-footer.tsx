@@ -1,37 +1,85 @@
-export function SiteFooter() {
+import { getTranslations } from "next-intl/server";
+import { LinkIcon } from "lucide-react";
+
+import { QiniuImage } from "@/components/qiniu-image";
+import { getFooterFriendLinks, getSiteContactConfig } from "@/lib/site-config";
+
+export async function SiteFooter() {
+  const t = await getTranslations("site.footer");
+  const commonT = await getTranslations("site.common");
+  const currentYear = new Date().getFullYear();
+  const [contact, footerLinks] = await Promise.all([
+    getSiteContactConfig(),
+    getFooterFriendLinks(),
+  ]);
+
   return (
-    <footer className="border-t border-slate-200 py-8">
-      <div className="mx-auto flex max-w-5xl flex-col gap-4 px-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-        <img alt="Huteng" className="h-10 w-auto" src="/brand/logo.svg" />
-        <div className="flex flex-col gap-2 text-slate-600">
-          <div className="flex flex-col text-slate-700">
-            <a className="hover:text-slate-900" href="tel:13520922911">
-              Phone: 13520922911
-            </a>
-            <a className="hover:text-slate-900" href="mailto:ht@huteng.com">
-              Email: ht@huteng.com
-            </a>
+    <footer className="bg-white py-12">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="grid gap-8 md:grid-cols-[1.3fr_1fr_1fr]">
+          <div className="space-y-4">
+            <img
+              alt={commonT("logoAlt")}
+              className="h-10 w-auto"
+              src="/brand/logo.svg"
+            />
+            <p className="max-w-xs text-sm leading-relaxed text-slate-600">
+              {t("tagline")}
+            </p>
           </div>
-          <span>
-            友情链接：{" "}
-            <a
-              className="text-slate-700 hover:text-slate-900"
-              href="https://www.aiaig.com/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              AIAIG
-            </a>{" "}
-            <a
-              className="text-slate-700 hover:text-slate-900"
-              href="https://chunzuo.com/"
-              rel="noreferrer"
-              target="_blank"
-            >
-              春座
-            </a>
-          </span>
+
+          <div className="space-y-3">
+            <p className="font-semibold text-slate-900">{t("contactTitle")}</p>
+            <div className="flex flex-col gap-2 text-sm text-slate-700">
+              <a
+                className="transition hover:text-slate-900"
+                href={`tel:${contact.phone}`}
+              >
+                {t("phoneLabel")}: {contact.phone}
+              </a>
+              <a
+                className="transition hover:text-slate-900"
+                href={`mailto:${contact.email}`}
+              >
+                {t("emailLabel")}: {contact.email}
+              </a>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="font-semibold text-slate-900">{t("friendLinks")}</p>
+            {footerLinks.length === 0 ? (
+              <p className="text-sm text-slate-500">{t("emptyFriendLinks")}</p>
+            ) : (
+              <div className="grid gap-2">
+                {footerLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    className="inline-flex w-fit items-center gap-2 py-1 text-sm text-slate-700 transition hover:text-slate-900"
+                    href={link.href}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {link.iconUrl ? (
+                      <QiniuImage
+                        src={link.iconUrl}
+                        alt={link.name}
+                        className="h-4 w-4 object-cover"
+                      />
+                    ) : (
+                      <LinkIcon className="h-4 w-4 text-slate-400" />
+                    )}
+                    <span>{link.name}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
+
+        <p className="mt-4 text-xs text-slate-500">
+          {t("copyright", { year: currentYear })}
+        </p>
       </div>
     </footer>
   );

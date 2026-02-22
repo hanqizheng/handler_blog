@@ -9,6 +9,21 @@ import { verifyTotpToken } from "@/lib/totp";
 
 export const runtime = "nodejs";
 
+const DEV_ADMIN_USER_ID = -1;
+
+const isDevAdminLoginEnabled = () =>
+  process.env.NODE_ENV === "development" &&
+  process.env.DEV_ADMIN_LOGIN_ENABLED === "true";
+
+const getDevAdminCredentials = () => {
+  const email = process.env.DEV_ADMIN_EMAIL?.trim() ?? "";
+  const passwordHash = process.env.DEV_ADMIN_PASSWORD_HASH?.trim() ?? "";
+  if (!email || !passwordHash) {
+    return null;
+  }
+  return { email, passwordHash };
+};
+
 export async function POST(request: Request) {
   let payload: unknown = null;
 
@@ -42,31 +57,63 @@ export async function POST(request: Request) {
     .where(eq(adminUsers.email, email))
     .limit(1);
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (user) {
+    if (!verifyPassword(password, user.passwordHash)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid credentials" },
+        { status: 401 },
+      );
+    }
+
+    if (user.totpSecret) {
+      if (!totp) {
+        return NextResponse.json(
+          { ok: false, requireTotp: true, error: "totp required" },
+          { status: 401 },
+        );
+      }
+      if (!verifyTotpToken(user.totpSecret, totp)) {
+        return NextResponse.json(
+          { ok: false, requireTotp: true, error: "invalid totp" },
+          { status: 401 },
+        );
+      }
+    }
+
+    const token = createAdminSessionToken({
+      userId: user.id,
+      email: user.email,
+      actorType: "owner",
+    });
+
+    const response = NextResponse.json({ ok: true });
+    response.headers.set("Set-Cookie", buildAdminSessionCookie(token));
+    return response;
+  }
+
+  if (!isDevAdminLoginEnabled()) {
     return NextResponse.json(
       { ok: false, error: "invalid credentials" },
       { status: 401 },
     );
   }
 
-  if (user.totpSecret) {
-    if (!totp) {
-      return NextResponse.json(
-        { ok: false, requireTotp: true, error: "totp required" },
-        { status: 401 },
-      );
-    }
-    if (!verifyTotpToken(user.totpSecret, totp)) {
-      return NextResponse.json(
-        { ok: false, requireTotp: true, error: "invalid totp" },
-        { status: 401 },
-      );
-    }
+  const devAdminCredentials = getDevAdminCredentials();
+  if (
+    !devAdminCredentials ||
+    devAdminCredentials.email !== email ||
+    !verifyPassword(password, devAdminCredentials.passwordHash)
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "invalid credentials" },
+      { status: 401 },
+    );
   }
 
   const token = createAdminSessionToken({
-    userId: user.id,
-    email: user.email,
+    userId: DEV_ADMIN_USER_ID,
+    email: devAdminCredentials.email,
+    actorType: "dev",
   });
 
   const response = NextResponse.json({ ok: true });

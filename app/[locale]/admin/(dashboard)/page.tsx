@@ -53,6 +53,20 @@ export default function AdminHomePage() {
               <span className="text-xs text-slate-400">进入</span>
             </Link>
             <Link
+              href="/admin/friend-links"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>友情链接管理</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
+            <Link
+              href="/admin/about"
+              className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+            >
+              <span>个人简介</span>
+              <span className="text-xs text-slate-400">进入</span>
+            </Link>
+            <Link
               href="/admin/security"
               className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
             >

@@ -45,6 +45,8 @@ export async function POST(request: Request) {
     displayName?: unknown;
     roleTitle?: unknown;
     bio?: unknown;
+    phone?: unknown;
+    email?: unknown;
   };
 
   const displayName =
@@ -52,6 +54,8 @@ export async function POST(request: Request) {
   const roleTitle =
     typeof data?.roleTitle === "string" ? data.roleTitle.trim() : "";
   const bio = typeof data?.bio === "string" ? data.bio.trim() : "";
+  const phone = typeof data?.phone === "string" ? data.phone.trim() : "";
+  const email = typeof data?.email === "string" ? data.email.trim() : "";
 
   if (!displayName || !bio) {
     return NextResponse.json(
@@ -69,10 +73,12 @@ export async function POST(request: Request) {
   if (existing?.id) {
     await db
       .update(siteProfiles)
-      .set({ displayName, roleTitle, bio })
+      .set({ displayName, roleTitle, bio, phone, email })
       .where(eq(siteProfiles.id, existing.id));
   } else {
-    await db.insert(siteProfiles).values({ displayName, roleTitle, bio });
+    await db
+      .insert(siteProfiles)
+      .values({ displayName, roleTitle, bio, phone, email });
   }
 
   return NextResponse.json({ ok: true });

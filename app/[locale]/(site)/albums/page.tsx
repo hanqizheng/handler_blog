@@ -1,4 +1,5 @@
 import { desc } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/db";
 import { photoAlbums } from "@/db/schema";
@@ -6,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { QiniuImage } from "@/components/qiniu-image";
 
 export default async function AlbumsPage() {
+  const t = await getTranslations("site.albums");
   const items = await db
     .select()
     .from(photoAlbums)
@@ -13,9 +15,9 @@ export default async function AlbumsPage() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">相册列表</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
       {items.length === 0 ? (
-        <p className="mt-6 text-sm text-slate-600">暂无相册</p>
+        <p className="mt-6 text-sm text-slate-600">{t("empty")}</p>
       ) : (
         <ul className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((item) => (
@@ -32,7 +34,7 @@ export default async function AlbumsPage() {
                   />
                 ) : (
                   <div className="flex h-56 w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
-                    暂无封面
+                    {t("noCover")}
                   </div>
                 )}
                 <div className="space-y-1 p-5">

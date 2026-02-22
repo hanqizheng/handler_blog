@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
+import { QiniuImage } from "@/components/qiniu-image";
+import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminDrawerActions } from "@/components/ui/admin-drawer-actions";
+import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,8 +20,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
-import { QiniuImage } from "@/components/qiniu-image";
 
 type BannerItem = {
   id: number;
@@ -28,27 +32,31 @@ type BannerItem = {
 };
 
 interface BannerManagerProps {
-  initialItems: BannerItem[];
+  items: BannerItem[];
+  drawerMode: "create" | "edit" | null;
+  editingItem: BannerItem | null;
 }
 
-export function BannerManager({ initialItems }: BannerManagerProps) {
-  const [items, setItems] = useState<BannerItem[]>(initialItems);
+const DEFAULT_FORM = {
+  linkUrl: "",
+  mainTitle: "",
+  subTitle: "",
+  sortOrder: "0",
+  isActive: true,
+};
+
+export function BannerManager({
+  items,
+  drawerMode,
+  editingItem,
+}: BannerManagerProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [formValues, setFormValues] = useState(DEFAULT_FORM);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [linkUrl, setLinkUrl] = useState("");
-  const [mainTitle, setMainTitle] = useState("");
-  const [subTitle, setSubTitle] = useState("");
-  const [sortOrder, setSortOrder] = useState("0");
-  const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editValues, setEditValues] = useState({
-    linkUrl: "",
-    mainTitle: "",
-    subTitle: "",
-    sortOrder: "0",
-    isActive: true,
-  });
+  const [dirty, setDirty] = useState(false);
 
   const { uploadFile } = useQiniuUpload({
     allowedTypes: ["image/*"],
@@ -59,56 +67,43 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
     return [...items].sort((a, b) => a.sortOrder - b.sortOrder || b.id - a.id);
   }, [items]);
 
-  const refreshItems = async () => {
-    const response = await fetch("/api/admin/banners");
-    const data = (await response.json().catch(() => null)) as {
-      ok?: boolean;
-      items?: BannerItem[];
-    } | null;
-    if (response.ok && data?.ok && data.items) {
-      setItems(data.items);
+  useEffect(() => {
+    if (drawerMode === "edit" && editingItem) {
+      setFormValues({
+        linkUrl: editingItem.linkUrl || "",
+        mainTitle: editingItem.mainTitle || "",
+        subTitle: editingItem.subTitle || "",
+        sortOrder: String(editingItem.sortOrder ?? 0),
+        isActive: editingItem.isActive === 1,
+      });
+    } else {
+      setFormValues(DEFAULT_FORM);
+    }
+    setImageFile(null);
+    setDirty(false);
+  }, [drawerMode, editingItem]);
+
+  const navigateDrawer = useCallback(
+    (mode: "create" | "edit" | null, id?: number | null) => {
+      const nextUrl = buildDrawerUrl(
+        pathname,
+        new URLSearchParams(searchParams.toString()),
+        mode,
+        id,
+      );
+      router.push(nextUrl);
+    },
+    [pathname, router, searchParams],
+  );
+
+  const markDirty = () => {
+    if (!dirty) {
+      setDirty(true);
     }
   };
 
-  const handleCreate = async () => {
-    if (!imageFile) {
-      alert("请选择要上传的图片");
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const uploadResult = await uploadFile(imageFile);
-      const response = await fetch("/api/admin/banners", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageUrl: uploadResult.url,
-          linkUrl,
-          mainTitle,
-          subTitle,
-          sortOrder: Number(sortOrder) || 0,
-          isActive,
-        }),
-      });
-      const data = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || "创建失败");
-      }
-      setImageFile(null);
-      setLinkUrl("");
-      setMainTitle("");
-      setSubTitle("");
-      setSortOrder("0");
-      setIsActive(true);
-      await refreshItems();
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "创建失败");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleClose = () => {
+    navigateDrawer(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -124,7 +119,7 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
       alert(data?.error || "删除失败");
       return;
     }
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    router.refresh();
   };
 
   const handleToggle = async (item: BannerItem) => {
@@ -141,79 +136,217 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
       alert(data?.error || "更新失败");
       return;
     }
-    await refreshItems();
+    router.refresh();
   };
 
-  const startEdit = (item: BannerItem) => {
-    setEditingId(item.id);
-    setEditValues({
-      linkUrl: item.linkUrl || "",
-      mainTitle: item.mainTitle || "",
-      subTitle: item.subTitle || "",
-      sortOrder: String(item.sortOrder ?? 0),
-      isActive: item.isActive === 1,
-    });
-  };
+  const handleSubmit = async () => {
+    if (drawerMode === "create" && !imageFile) {
+      alert("请选择要上传的图片");
+      return;
+    }
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setIsSaving(false);
-  };
-
-  const saveEdit = async (id: number) => {
-    setIsSaving(true);
+    setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/admin/banners/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          linkUrl: editValues.linkUrl,
-          mainTitle: editValues.mainTitle,
-          subTitle: editValues.subTitle,
-          sortOrder: Number(editValues.sortOrder) || 0,
-          isActive: editValues.isActive,
-        }),
-      });
-      const data = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        error?: string;
-      } | null;
-      if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || "更新失败");
+      if (drawerMode === "create") {
+        const uploadResult = await uploadFile(imageFile as File);
+        const response = await fetch("/api/admin/banners", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: uploadResult.url,
+            linkUrl: formValues.linkUrl,
+            mainTitle: formValues.mainTitle,
+            subTitle: formValues.subTitle,
+            sortOrder: Number(formValues.sortOrder) || 0,
+            isActive: formValues.isActive,
+          }),
+        });
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+        } | null;
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "创建失败");
+        }
+      } else if (drawerMode === "edit" && editingItem) {
+        const response = await fetch(`/api/admin/banners/${editingItem.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            linkUrl: formValues.linkUrl,
+            mainTitle: formValues.mainTitle,
+            subTitle: formValues.subTitle,
+            sortOrder: Number(formValues.sortOrder) || 0,
+            isActive: formValues.isActive,
+          }),
+        });
+        const data = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          error?: string;
+        } | null;
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error || "更新失败");
+        }
       }
-      setEditingId(null);
-      await refreshItems();
+
+      setDirty(false);
+      navigateDrawer(null);
+      router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "更新失败");
+      alert(error instanceof Error ? error.message : "保存失败");
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
+  const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>上传新 Banner</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="banner-image">图片</Label>
-            <Input
-              id="banner-image"
-              type="file"
-              accept="image/*"
-              onChange={(event) =>
-                setImageFile(event.target.files?.[0] ?? null)
-              }
-            />
-          </div>
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-end">
+          <Button onClick={() => navigateDrawer("create")}>新增 Banner</Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Banner 列表</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>预览</TableHead>
+                  <TableHead>链接</TableHead>
+                  <TableHead>标题</TableHead>
+                  <TableHead>排序</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead className="w-56">操作</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6}>暂无 Banner</TableCell>
+                  </TableRow>
+                ) : (
+                  sortedItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <QiniuImage
+                          src={item.imageUrl}
+                          alt="banner"
+                          className="h-14 w-24 rounded object-cover"
+                        />
+                      </TableCell>
+                      <TableCell className="max-w-60 truncate">
+                        {item.linkUrl || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium">
+                            {item.mainTitle || "-"}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {item.subTitle || "-"}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.sortOrder}</TableCell>
+                      <TableCell>
+                        {item.isActive === 1 ? "展示中" : "已隐藏"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigateDrawer("edit", item.id)}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggle(item)}
+                          >
+                            {item.isActive === 1 ? "隐藏" : "展示"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            删除
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+      <AdminFormDrawer
+        open={isDrawerOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleClose();
+          }
+        }}
+        title={drawerMode === "create" ? "新增 Banner" : "编辑 Banner"}
+        description={
+          drawerMode === "create"
+            ? "上传首页 Banner 并设置展示信息"
+            : "更新 Banner 的文案、排序与状态"
+        }
+        width={640}
+        dirty={dirty}
+        footer={
+          <AdminDrawerActions
+            submitting={isSubmitting}
+            onCancel={handleClose}
+            onConfirm={handleSubmit}
+          />
+        }
+      >
+        <div className="space-y-4">
+          {drawerMode === "edit" && editingItem ? (
+            <div className="space-y-2">
+              <Label>当前图片</Label>
+              <QiniuImage
+                src={editingItem.imageUrl}
+                alt="banner"
+                className="h-40 w-full rounded object-cover"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="banner-image">图片</Label>
+              <Input
+                id="banner-image"
+                type="file"
+                accept="image/*"
+                onChange={(event) => {
+                  markDirty();
+                  setImageFile(event.target.files?.[0] ?? null);
+                }}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="banner-link">跳转链接（可选）</Label>
             <Input
               id="banner-link"
-              value={linkUrl}
-              onChange={(event) => setLinkUrl(event.target.value)}
+              value={formValues.linkUrl}
+              onChange={(event) => {
+                markDirty();
+                setFormValues((prev) => ({
+                  ...prev,
+                  linkUrl: event.target.value,
+                }));
+              }}
               placeholder="https://example.com"
             />
           </div>
@@ -222,8 +355,14 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
               <Label htmlFor="banner-main-title">主标题（可选）</Label>
               <Input
                 id="banner-main-title"
-                value={mainTitle}
-                onChange={(event) => setMainTitle(event.target.value)}
+                value={formValues.mainTitle}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    mainTitle: event.target.value,
+                  }));
+                }}
                 placeholder="输入主标题"
               />
             </div>
@@ -231,8 +370,14 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
               <Label htmlFor="banner-sub-title">副标题（可选）</Label>
               <Input
                 id="banner-sub-title"
-                value={subTitle}
-                onChange={(event) => setSubTitle(event.target.value)}
+                value={formValues.subTitle}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    subTitle: event.target.value,
+                  }));
+                }}
                 placeholder="输入副标题"
               />
             </div>
@@ -243,199 +388,34 @@ export function BannerManager({ initialItems }: BannerManagerProps) {
               <Input
                 id="banner-order"
                 type="number"
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
+                value={formValues.sortOrder}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    sortOrder: event.target.value,
+                  }));
+                }}
                 className="w-32"
               />
             </div>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 pt-6 text-sm text-slate-600">
               <input
                 type="checkbox"
-                checked={isActive}
-                onChange={(event) => setIsActive(event.target.checked)}
+                checked={formValues.isActive}
+                onChange={(event) => {
+                  markDirty();
+                  setFormValues((prev) => ({
+                    ...prev,
+                    isActive: event.target.checked,
+                  }));
+                }}
               />
               立即展示
             </label>
           </div>
-          <Button onClick={handleCreate} disabled={isSubmitting}>
-            {isSubmitting ? "上传中..." : "创建 Banner"}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Banner 列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>预览</TableHead>
-                <TableHead>链接</TableHead>
-                <TableHead>标题</TableHead>
-                <TableHead>排序</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead className="w-50">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedItems.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6}>暂无 Banner</TableCell>
-                </TableRow>
-              ) : (
-                sortedItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <QiniuImage
-                        src={item.imageUrl}
-                        alt="banner"
-                        className="h-14 w-24 rounded object-cover"
-                      />
-                    </TableCell>
-                    {editingId === item.id ? (
-                      <>
-                        <TableCell>
-                          <Input
-                            value={editValues.linkUrl}
-                            onChange={(event) =>
-                              setEditValues((prev) => ({
-                                ...prev,
-                                linkUrl: event.target.value,
-                              }))
-                            }
-                            placeholder="https://example.com"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <Input
-                              value={editValues.mainTitle}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  mainTitle: event.target.value,
-                                }))
-                              }
-                              placeholder="主标题"
-                            />
-                            <Input
-                              value={editValues.subTitle}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  subTitle: event.target.value,
-                                }))
-                              }
-                              placeholder="副标题"
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={editValues.sortOrder}
-                            onChange={(event) =>
-                              setEditValues((prev) => ({
-                                ...prev,
-                                sortOrder: event.target.value,
-                              }))
-                            }
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <label className="flex items-center gap-2 text-sm text-slate-600">
-                            <input
-                              type="checkbox"
-                              checked={editValues.isActive}
-                              onChange={(event) =>
-                                setEditValues((prev) => ({
-                                  ...prev,
-                                  isActive: event.target.checked,
-                                }))
-                              }
-                            />
-                            {editValues.isActive ? "展示中" : "已隐藏"}
-                          </label>
-                        </TableCell>
-                      </>
-                    ) : (
-                      <>
-                        <TableCell className="max-w-60 truncate">
-                          {item.linkUrl || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="text-sm font-medium">
-                              {item.mainTitle || "-"}
-                            </div>
-                            <div className="text-xs text-slate-500">
-                              {item.subTitle || "-"}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.sortOrder}</TableCell>
-                        <TableCell>
-                          {item.isActive === 1 ? "展示中" : "已隐藏"}
-                        </TableCell>
-                      </>
-                    )}
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {editingId === item.id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={() => saveEdit(item.id)}
-                              disabled={isSaving}
-                            >
-                              {isSaving ? "保存中..." : "保存"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={cancelEdit}
-                              disabled={isSaving}
-                            >
-                              取消
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => startEdit(item)}
-                            >
-                              编辑
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleToggle(item)}
-                            >
-                              {item.isActive === 1 ? "隐藏" : "展示"}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              删除
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </AdminFormDrawer>
+    </>
   );
 }

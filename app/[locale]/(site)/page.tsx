@@ -1,4 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { db } from "@/db";
@@ -6,6 +7,7 @@ import { banners, posts, products } from "@/db/schema";
 import { QiniuImage } from "@/components/qiniu-image";
 
 export default async function HomePage() {
+  const t = await getTranslations("site.home");
   const latestPosts = await db
     .select()
     .from(posts)
@@ -40,13 +42,13 @@ export default async function HomePage() {
                 }}
               >
                 <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                  Handler Blog
+                  {t("heroTag")}
                 </p>
                 <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
-                  用设计感，讲好每一篇故事。
+                  {t("heroTitle")}
                 </h1>
                 <p className="max-w-2xl text-lg font-medium text-white/85 md:text-2xl">
-                  用文字、影像与产品共同塑造你的品牌气质。
+                  {t("heroDescription")}
                 </p>
               </div>
             </div>
@@ -67,9 +69,9 @@ export default async function HomePage() {
                   }
                 : undefined;
 
-              const slideTitle = banner.mainTitle ?? "Handler Blog";
+              const slideTitle = banner.mainTitle ?? t("bannerFallbackTitle");
               const slideSubtitle =
-                banner.subTitle ?? "用设计感写下每一次灵感。";
+                banner.subTitle ?? t("bannerFallbackSubtitle");
 
               return banner.linkUrl ? (
                 <a
@@ -102,7 +104,7 @@ export default async function HomePage() {
                       }}
                     >
                       <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        Banner
+                        {t("bannerTag")}
                       </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
@@ -143,7 +145,7 @@ export default async function HomePage() {
                       }}
                     >
                       <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        Banner
+                        {t("bannerTag")}
                       </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
@@ -185,30 +187,30 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="space-y-3">
               <p className="text-xs tracking-[0.3em] text-slate-500 uppercase">
-                Latest Posts
+                {t("latestTag")}
               </p>
               <h2 className="text-3xl font-semibold text-slate-900 md:text-4xl">
-                鹄说
+                {t("latestTitle")}
               </h2>
               <p className="max-w-xl text-base text-slate-600 md:text-lg">
-                把深度思考整理成可阅读的故事，留住灵感轨迹。
+                {t("latestDescription")}
               </p>
             </div>
             <Link
               href="/posts"
               className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
             >
-              查看更多
+              {t("viewMore")}
             </Link>
           </div>
           {latestPosts.length === 0 ? (
-            <p className="mt-10 text-slate-500">暂无文章</p>
+            <p className="mt-10 text-slate-500">{t("emptyPosts")}</p>
           ) : (
             <div className="mt-12 grid gap-10 md:grid-cols-2">
               {latestPosts.map((item, index) => (
                 <Link
                   key={item.id}
-                  href={`/posts/${item.id}`}
+                  href={`/posts/${item.id}?from=${encodeURIComponent("/")}`}
                   className="group rise-in block bg-white"
                   style={{ animationDelay: `${index * 120}ms` }}
                 >
@@ -221,7 +223,7 @@ export default async function HomePage() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
-                        暂无封面
+                        {t("noCover")}
                       </div>
                     )}
                     <div className="post-glow pointer-events-none absolute bottom-0 left-0 h-28 w-28 bg-[radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.32),transparent_65%)] opacity-0 transition duration-500 group-hover:opacity-100" />
@@ -243,18 +245,18 @@ export default async function HomePage() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="space-y-3">
               <p className="text-xs tracking-[0.3em] text-slate-500 uppercase">
-                Products
+                {t("productsTag")}
               </p>
               <h2 className="text-3xl font-semibold text-slate-900 md:text-4xl">
-                个人产品
+                {t("productsTitle")}
               </h2>
               <p className="max-w-xl text-base text-slate-600 md:text-lg">
-                以体验为中心的产品，鹄说不鹄做
+                {t("productsDescription")}
               </p>
             </div>
           </div>
           {productItems.length === 0 ? (
-            <p className="mt-10 text-slate-500">暂无产品信息</p>
+            <p className="mt-10 text-slate-500">{t("emptyProducts")}</p>
           ) : (
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {productItems.map((product) => (
@@ -279,7 +281,9 @@ export default async function HomePage() {
                       <h3 className="text-lg font-semibold text-slate-900">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-slate-500">精选产品</p>
+                      <p className="text-sm text-slate-500">
+                        {t("productFeatured")}
+                      </p>
                     </div>
                   </div>
                   <div className="relative z-10 mt-4 flex flex-1 flex-col">
@@ -288,14 +292,16 @@ export default async function HomePage() {
                         {product.description}
                       </p>
                     ) : (
-                      <p className="text-sm text-slate-400">暂无描述</p>
+                      <p className="text-sm text-slate-400">
+                        {t("productNoDescription")}
+                      </p>
                     )}
                     {product.linkUrl ? (
                       <a
                         href={product.linkUrl}
                         className="mt-auto inline-flex items-center pt-6 text-sm font-medium text-slate-700 transition hover:text-slate-900"
                       >
-                        了解更多 →
+                        {t("productLearnMore")}
                       </a>
                     ) : null}
                   </div>

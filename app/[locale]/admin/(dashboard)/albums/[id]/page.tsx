@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
+import {
+  parseDrawerState,
+  type AdminSearchParams,
+} from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { db } from "@/db";
 import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
 
@@ -9,9 +13,17 @@ import { AlbumPhotoManager } from "./_components/AlbumPhotoManager";
 
 export default async function AdminAlbumDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<AdminSearchParams>;
 }) {
+  const resolvedSearchParams = await searchParams;
+  const { mode: drawerMode } = parseDrawerState(resolvedSearchParams, [
+    "cover",
+    "upload",
+  ] as const);
+
   const { id: rawId } = await params;
   const albumId = Number(rawId);
   if (!Number.isInteger(albumId) || albumId <= 0) {
@@ -45,8 +57,14 @@ export default async function AdminAlbumDetailPage({
         albumId={album.id}
         albumSlug={album.slug}
         coverUrl={album.coverUrl}
+        drawerMode={drawerMode === "cover" ? "cover" : null}
       />
-      <AlbumPhotoManager albumId={album.id} albumSlug={album.slug} photos={photos} />
+      <AlbumPhotoManager
+        albumId={album.id}
+        albumSlug={album.slug}
+        photos={photos}
+        drawerMode={drawerMode === "upload" ? "upload" : null}
+      />
     </section>
   );
 }

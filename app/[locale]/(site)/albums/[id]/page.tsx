@@ -1,4 +1,5 @@
 import { asc, eq } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 
 import { db } from "@/db";
 import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
@@ -18,14 +19,15 @@ export default async function AlbumDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = await getTranslations("site.albumDetail");
   const { id: rawId } = await params;
   const id = parseId(rawId);
 
   if (!id) {
     return (
       <main>
-        <p>相册不存在</p>
-        <Link href="/albums">返回相册列表</Link>
+        <p>{t("notFound")}</p>
+        <Link href="/albums">{t("backToAlbums")}</Link>
       </main>
     );
   }
@@ -39,8 +41,8 @@ export default async function AlbumDetailPage({
   if (!album) {
     return (
       <main>
-        <p>相册不存在</p>
-        <Link href="/albums">返回相册列表</Link>
+        <p>{t("notFound")}</p>
+        <Link href="/albums">{t("backToAlbums")}</Link>
       </main>
     );
   }
@@ -66,13 +68,13 @@ export default async function AlbumDetailPage({
       </div>
       <section className="mt-8">
         {photos.length === 0 ? (
-          <p>暂无照片</p>
+          <p>{t("emptyPhotos")}</p>
         ) : (
           <ImagePreviewGallery images={images} />
         )}
       </section>
       <p className="mt-8">
-        <Link href="/albums">返回相册列表</Link>
+        <Link href="/albums">{t("backToAlbums")}</Link>
       </p>
     </main>
   );

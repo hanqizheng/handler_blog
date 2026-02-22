@@ -1,11 +1,4 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/db";
-import { posts } from "@/db/schema";
-import { Link } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
-
-import { PostEditorForm } from "../../_components/PostEditorForm";
+import { redirect } from "next/navigation";
 
 function parseId(rawId: string) {
   const id = Number(rawId);
@@ -24,42 +17,8 @@ export default async function AdminEditPostPage({
   const id = parseId(rawId);
 
   if (!id) {
-    return (
-      <section className="flex w-full flex-1 flex-col gap-6">
-        <p>文章不存在</p>
-        <Button asChild variant="ghost">
-          <Link href="/admin/posts">返回文章列表</Link>
-        </Button>
-      </section>
-    );
+    redirect("/admin/posts");
   }
 
-  const [item] = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
-
-  if (!item) {
-    return (
-      <section className="flex w-full flex-1 flex-col gap-6">
-        <p>文章不存在</p>
-        <Button asChild variant="ghost">
-          <Link href="/admin/posts">返回文章列表</Link>
-        </Button>
-      </section>
-    );
-  }
-
-  return (
-    <section className="flex w-full flex-1 flex-col gap-6">
-      <PostEditorForm
-        mode="edit"
-        postId={item.id}
-        initialTitle={item.title}
-        initialContent={item.content}
-        initialAssetFolder={item.assetFolder}
-        initialCoverImageUrl={item.coverImageUrl}
-      />
-      <Button asChild variant="ghost">
-        <Link href="/admin/posts">返回文章列表</Link>
-      </Button>
-    </section>
-  );
+  redirect(`/admin/posts?drawer=edit&id=${id}`);
 }
