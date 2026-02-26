@@ -190,6 +190,7 @@ export function PostEditorForm({
     const uploadsToHandle = pendingImages.filter(({ url }) =>
       resolvedContent.includes(url),
     );
+    const urlReplacements = new Map<string, string>();
 
     try {
       if (coverFile) {
@@ -201,12 +202,13 @@ export function PostEditorForm({
       for (const pending of uploadsToHandle) {
         const result = await uploadFile(pending.file);
         resolvedContent = resolvedContent.split(pending.url).join(result.url);
+        urlReplacements.set(pending.url, result.url);
       }
       if (uploadsToHandle.length > 0) {
         editorRef.current?.removePendingImages(
           uploadsToHandle.map((item) => item.url),
         );
-        setContent(resolvedContent);
+        editorRef.current?.replaceImageUrls(urlReplacements);
       }
 
       const response = await fetch(

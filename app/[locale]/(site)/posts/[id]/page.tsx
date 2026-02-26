@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { CommentSection } from "@/components/comment-section";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { MarkdownContent } from "@/components/markdown-content";
 import { SiteBackLink } from "@/components/site-back-link";
 import { db } from "@/db";
 import { commentCaptchaSettings, postCategories, posts } from "@/db/schema";
@@ -128,7 +128,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
         </p>
       </div>
       <article className="mt-10">
-        <MarkdownRenderer content={item.content} className="text-[15px]" />
+        <MarkdownContent content={item.content} className="text-[15px]" />
       </article>
       <CommentSection postId={item.id} captchaEnabled={captchaEnabled} />
       <p className="mt-10 text-sm text-slate-600">

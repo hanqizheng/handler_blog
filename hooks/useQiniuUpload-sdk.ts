@@ -2,6 +2,8 @@
 
 import { useCallback } from "react";
 
+import imageCompression from "browser-image-compression";
+
 import { normalizeImageKey } from "@/utils/image";
 
 export const DEFAULT_MAX_FILE_SIZE = 400 * 1024;
@@ -158,6 +160,30 @@ const isDebugEnabled = () =>
   typeof process !== "undefined" &&
   process.env.NEXT_PUBLIC_QINIU_DEBUG === "true";
 
+const COMPRESSIBLE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+export async function compressImageIfNeeded(
+  file: File,
+  maxSizeBytes: number,
+): Promise<File> {
+  if (file.size <= maxSizeBytes) {
+    return file;
+  }
+
+  if (!COMPRESSIBLE_TYPES.has(file.type)) {
+    return file;
+  }
+
+  const compressed = await imageCompression(file, {
+    maxSizeMB: maxSizeBytes / (1024 * 1024),
+    maxWidthOrHeight: 1920,
+    useWebWorker: true,
+    fileType: file.type,
+  });
+
+  return new File([compressed], file.name, { type: file.type });
+}
+
 const fetchUploadToken = async (key: string) => {
   const response = await fetch("/api/qiniu/upload-token", {
     method: "POST",
@@ -301,11 +327,15 @@ export const useQiniuUpload = (options: UseQiniuUploadOptions = {}) => {
         maxFileSizeByType,
         maxFileSize,
       );
-      if (file.size > sizeLimit) {
+
+      // Auto-compress oversized images instead of rejecting them
+      const fileToUpload = await compressImageIfNeeded(file, sizeLimit);
+
+      if (fileToUpload.size > sizeLimit) {
         throw new Error("文件大小超过限制");
       }
 
-      const key = buildObjectKey(file, pathPrefix);
+      const key = buildObjectKey(fileToUpload, pathPrefix);
       const {
         token,
         uploadDomain,
@@ -315,7 +345,7 @@ export const useQiniuUpload = (options: UseQiniuUploadOptions = {}) => {
 
       const uploadResult = await uploadWithProgress(
         uploadDomain,
-        file,
+        fileToUpload,
         token,
         resolvedKey,
         onProgress,

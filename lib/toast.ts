@@ -1,15 +1,7 @@
-type ToastLevel = "success" | "error" | "message";
-
-const notify = (level: ToastLevel, message: string) => {
-  if (level === "error") {
-    console.error(message);
-    return;
-  }
-  console.log(message);
-};
+import { toast as sonnerToast } from "sonner";
 
 export const toast = {
-  success: (message: string) => notify("success", message),
-  error: (message: string) => notify("error", message),
-  message: (message: string) => notify("message", message),
+  success: (message: string) => sonnerToast.success(message),
+  error: (message: string) => sonnerToast.error(message),
+  message: (message: string) => sonnerToast.message(message),
 };
