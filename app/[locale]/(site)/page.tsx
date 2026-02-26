@@ -1,13 +1,41 @@
 import { asc, desc, eq } from "drizzle-orm";
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { Link } from "@/i18n/navigation";
 import { db } from "@/db";
 import { banners, posts, products } from "@/db/schema";
 import { QiniuImage } from "@/components/qiniu-image";
+import {
+  buildPageMetadata,
+  getSiteName,
+  resolveLocale,
+  SITE_NAME,
+} from "@/lib/seo";
+
+type HomePageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: HomePageProps): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: "site.home" });
+
+  return buildPageMetadata({
+    locale,
+    pathname: "/",
+    title: SITE_NAME,
+    description: t("heroDescription"),
+    absoluteTitle: true,
+  });
+}
 
 export default async function HomePage() {
   const t = await getTranslations("site.home");
+  const siteName = getSiteName();
   const latestPosts = await db
     .select()
     .from(posts)
@@ -42,7 +70,7 @@ export default async function HomePage() {
                 }}
               >
                 <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                  {t("heroTag")}
+                  {siteName}
                 </p>
                 <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                   {t("heroTitle")}
@@ -69,7 +97,7 @@ export default async function HomePage() {
                   }
                 : undefined;
 
-              const slideTitle = banner.mainTitle ?? t("bannerFallbackTitle");
+              const slideTitle = banner.mainTitle ?? siteName;
               const slideSubtitle =
                 banner.subTitle ?? t("bannerFallbackSubtitle");
 
@@ -103,9 +131,6 @@ export default async function HomePage() {
                           "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
                       }}
                     >
-                      <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        {t("bannerTag")}
-                      </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
                       </h1>
@@ -144,9 +169,6 @@ export default async function HomePage() {
                           "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
                       }}
                     >
-                      <p className="text-xs tracking-[0.35em] text-white/70 uppercase">
-                        {t("bannerTag")}
-                      </p>
                       <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
                         {slideTitle}
                       </h1>

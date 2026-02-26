@@ -1,10 +1,10 @@
 {
   "app": {
-    "name": "handler_blog"
+    "name": "Site"
   },
   "site": {
     "common": {
-      "logoAlt": "Huteng"
+      "logoAlt": "网站 Logo"
     },
     "nav": {
       "home": "首页",
@@ -27,14 +27,14 @@
         "aiaig": "AIAIG",
         "chunzuo": "春座"
       },
-      "copyright": "© {year} Huteng. All rights reserved."
+      "copyright": "© {year} {siteName}。保留所有权利。"
     },
     "home": {
-      "heroTag": "Handler Blog",
+      "heroTag": "Site",
       "heroTitle": "用设计感，讲好每一篇故事。",
       "heroDescription": "用文字、影像与产品共同塑造你的品牌气质。",
       "bannerTag": "Banner",
-      "bannerFallbackTitle": "Handler Blog",
+      "bannerFallbackTitle": "Site",
       "bannerFallbackSubtitle": "用设计感写下每一次灵感。",
       "latestTag": "Latest Posts",
       "latestTitle": "鹄说",
@@ -44,7 +44,7 @@
       "noCover": "暂无封面",
       "productsTag": "Products",
       "productsTitle": "个人产品",
-      "productsDescription": "以体验为中心的产品，鹄说不鹄做",
+      "productsDescription": "养老靠“春座”，从“AIAIG”看世界",
       "emptyProducts": "暂无产品信息",
       "productFeatured": "精选产品",
       "productNoDescription": "暂无描述",
@@ -65,6 +65,7 @@
     },
     "albums": {
       "title": "相册列表",
+      "description": "按主题整理的影像记录与相册归档。",
       "empty": "暂无相册",
       "noCover": "暂无封面"
     },
@@ -76,7 +77,9 @@
     "about": {
       "eyebrow": "Hu Teng",
       "title": "关于我",
-      "description": "从个人主页到独立经纪，从互联网到海外置业，记录一条更真实、更自我的路线。",
+      "description": "个人网站的第一版是2004年，22年后想重新记录自己",
+      "description2": "在乎个人主权. 思想独立；",
+      "description3": "以自己为核心，其它平台只是工具；",
       "profileTitle": "个人简介",
       "profileBadge": "主页",
       "emptyProfile": "暂无个人简介内容"

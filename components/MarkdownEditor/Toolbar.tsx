@@ -5,7 +5,7 @@ import { useSlate } from "slate-react";
 import {
   Bold,
   Highlighter,
-  Image,
+  Image as ImageIcon,
   Italic,
   List,
   ListOrdered,
@@ -255,94 +255,91 @@ export const MarkdownToolbar: React.FC<MarkdownToolbarProps> = ({
     [],
   );
 
-  const renderBuiltinItem = useCallback(
-    (item: BuiltinToolbarItem): ReactNode => {
-      switch (item) {
-        case "undo":
-          return <HistoryButton key="undo" type="undo" disabled={disabled} />;
-        case "redo":
-          return <HistoryButton key="redo" type="redo" disabled={disabled} />;
-        case "heading":
-          return <HeadingDropdown key="heading" disabled={disabled} />;
-        case "bold":
-          return (
-            <MarkButton
-              key="bold"
-              format="bold"
-              icon={<Bold className="h-4 w-4" />}
-              label={toolbarText.bold}
-              disabled={disabled}
-            />
-          );
-        case "italic":
-          return (
-            <MarkButton
-              key="italic"
-              format="italic"
-              icon={<Italic className="h-4 w-4" />}
-              label={toolbarText.italic}
-              disabled={disabled}
-            />
-          );
-        case "highlight":
-          return (
-            <MarkButton
-              key="highlight"
-              format="highlight"
-              icon={<Highlighter className="h-4 w-4" />}
-              label={toolbarText.highlight}
-              disabled={disabled}
-            />
-          );
-        case "image":
-          return (
-            <ToolbarButton
-              key="image"
-              icon={<Image className="h-4 w-4" />}
-              label={toolbarText.image}
-              disabled={disabled || !context.onRequestImageUpload}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                context.onRequestImageUpload?.();
-              }}
-            />
-          );
-        case "orderedList":
-          return (
-            <BlockButton
-              key="orderedList"
-              format="numbered-list"
-              icon={<ListOrdered className="h-4 w-4" />}
-              label={toolbarText.orderedList}
-              disabled={disabled}
-            />
-          );
-        case "unorderedList":
-          return (
-            <BlockButton
-              key="unorderedList"
-              format="bulleted-list"
-              icon={<List className="h-4 w-4" />}
-              label={toolbarText.unorderedList}
-              disabled={disabled}
-            />
-          );
-        case "blockquote":
-          return (
-            <BlockButton
-              key="blockquote"
-              format="block-quote"
-              icon={<Quote className="h-4 w-4" />}
-              label={toolbarText.blockquote}
-              disabled={disabled}
-            />
-          );
-        default:
-          return null;
-      }
-    },
-    [disabled, toolbarText],
-  );
+  const renderBuiltinItem = (item: BuiltinToolbarItem): ReactNode => {
+    switch (item) {
+      case "undo":
+        return <HistoryButton key="undo" type="undo" disabled={disabled} />;
+      case "redo":
+        return <HistoryButton key="redo" type="redo" disabled={disabled} />;
+      case "heading":
+        return <HeadingDropdown key="heading" disabled={disabled} />;
+      case "bold":
+        return (
+          <MarkButton
+            key="bold"
+            format="bold"
+            icon={<Bold className="h-4 w-4" />}
+            label={toolbarText.bold}
+            disabled={disabled}
+          />
+        );
+      case "italic":
+        return (
+          <MarkButton
+            key="italic"
+            format="italic"
+            icon={<Italic className="h-4 w-4" />}
+            label={toolbarText.italic}
+            disabled={disabled}
+          />
+        );
+      case "highlight":
+        return (
+          <MarkButton
+            key="highlight"
+            format="highlight"
+            icon={<Highlighter className="h-4 w-4" />}
+            label={toolbarText.highlight}
+            disabled={disabled}
+          />
+        );
+      case "image":
+        return (
+          <ToolbarButton
+            key="image"
+            icon={<ImageIcon className="h-4 w-4" />}
+            label={toolbarText.image}
+            disabled={disabled || !context.onRequestImageUpload}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              context.onRequestImageUpload?.();
+            }}
+          />
+        );
+      case "orderedList":
+        return (
+          <BlockButton
+            key="orderedList"
+            format="numbered-list"
+            icon={<ListOrdered className="h-4 w-4" />}
+            label={toolbarText.orderedList}
+            disabled={disabled}
+          />
+        );
+      case "unorderedList":
+        return (
+          <BlockButton
+            key="unorderedList"
+            format="bulleted-list"
+            icon={<List className="h-4 w-4" />}
+            label={toolbarText.unorderedList}
+            disabled={disabled}
+          />
+        );
+      case "blockquote":
+        return (
+          <BlockButton
+            key="blockquote"
+            format="block-quote"
+            icon={<Quote className="h-4 w-4" />}
+            label={toolbarText.blockquote}
+            disabled={disabled}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="flex flex-wrap items-center gap-1 rounded-md border border-slate-200 bg-white p-2">

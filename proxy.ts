@@ -104,7 +104,7 @@ const verifyAdminToken = async (token: string) => {
   }
 };
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const normalized = normalizePathname(pathname);
 
@@ -114,8 +114,16 @@ export async function middleware(request: NextRequest) {
     return intlMiddleware(request);
   }
 
-  const publicAdminPages = ["/admin/login", "/admin/signup"];
-  const publicAdminApis = ["/api/admin/auth/login", "/api/admin/auth/signup"];
+  const publicAdminPages = [
+    "/admin/login",
+    "/admin/signup",
+    "/admin/accept-invitation",
+  ];
+  const publicAdminApis = [
+    "/api/admin/auth/login",
+    "/api/admin/auth/signup",
+    "/api/admin/users/accept-invitation",
+  ];
 
   if (isAdminApi && publicAdminApis.includes(normalized.pathname)) {
     return NextResponse.next();

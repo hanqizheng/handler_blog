@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
@@ -61,13 +61,10 @@ export function PostManager({
   const [dirty, setDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    setDirty(false);
-    setIsSubmitting(false);
-  }, [drawerMode, editingPost?.id]);
-
   const navigateDrawer = useCallback(
     (mode: "create" | "edit" | null, id?: number | null) => {
+      setDirty(false);
+      setIsSubmitting(false);
       const nextUrl = buildDrawerUrl(
         pathname,
         new URLSearchParams(searchParams.toString()),
@@ -79,24 +76,27 @@ export function PostManager({
     [pathname, router, searchParams],
   );
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     navigateDrawer("create");
-  };
+  }, [navigateDrawer]);
 
-  const handleEdit = (id: number) => {
-    navigateDrawer("edit", id);
-  };
+  const handleEdit = useCallback(
+    (id: number) => {
+      navigateDrawer("edit", id);
+    },
+    [navigateDrawer],
+  );
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     navigateDrawer(null);
-  };
+  }, [navigateDrawer]);
 
-  const handleSaved = () => {
+  const handleSaved = useCallback(() => {
     setDirty(false);
     setIsSubmitting(false);
     navigateDrawer(null);
     router.refresh();
-  };
+  }, [navigateDrawer, router]);
 
   const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
   const hasActiveCategories = categories.some((item) => item.isActive === 1);

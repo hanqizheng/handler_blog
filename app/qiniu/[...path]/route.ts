@@ -198,8 +198,6 @@ const buildUpstreamErrorResponse = (error: unknown) => {
   );
 };
 
-type RouteContext = { params: Promise<{ path?: string[] | string }> };
-
 const getRawPathFromRequest = (request: Request) => {
   const { pathname } = new URL(request.url);
   if (pathname === "/qiniu") return "";
@@ -340,10 +338,10 @@ const handleProxyRequest = async (request: Request, method: "GET" | "HEAD") => {
   });
 };
 
-export async function GET(request: Request, _context: RouteContext) {
+export async function GET(request: Request) {
   return handleProxyRequest(request, "GET");
 }
 
-export async function HEAD(request: Request, _context: RouteContext) {
+export async function HEAD(request: Request) {
   return handleProxyRequest(request, "HEAD");
 }

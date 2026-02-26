@@ -1,21 +1,29 @@
-import tsParser from "@typescript-eslint/parser";
-import tsPlugin from "@typescript-eslint/eslint-plugin";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
+import reactHooks from "eslint-plugin-react-hooks";
 
-export default [
+export default defineConfig([
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
-    files: ["**/*.{js,jsx,ts,tsx}"],
-    ignores: ["node_modules/**", ".next/**", "dist/**"],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        ecmaFeatures: { jsx: true },
-      },
-    },
     plugins: {
-      "@typescript-eslint": tsPlugin,
+      "react-hooks": reactHooks,
     },
-    rules: {},
+    rules: {
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+    },
   },
-];
+  globalIgnores([
+    ".deploy/**",
+    ".next/**",
+    "node_modules/**",
+    "dist/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);

@@ -104,6 +104,12 @@ export interface MarkdownEditorRef {
    * Remove pending images by URL
    */
   removePendingImages: (urls: string[]) => void;
+
+  /**
+   * Replace image URLs in the Slate tree in-place without a markdown round-trip.
+   * This avoids path-mismatch crashes caused by lossy serialize/deserialize cycles.
+   */
+  replaceImageUrls: (replacements: Map<string, string>) => void;
 }
 
 // Slate types for MarkdownEditor (local types, not module augmentation to avoid conflict with RichTextEditor)
@@ -136,6 +142,7 @@ export interface MarkdownElement {
   type: MarkdownBlockType;
   url?: string;
   alt?: string;
+  loading?: boolean;
   children: Descendant[];
 }
 

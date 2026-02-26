@@ -1,8 +1,29 @@
+import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { getLatestSiteProfile } from "@/lib/site-config";
+import { buildPageMetadata, resolveLocale } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+type AboutPageProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: AboutPageProps): Promise<Metadata> {
+  const { locale: rawLocale } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: "site.about" });
+
+  return buildPageMetadata({
+    locale,
+    pathname: "/about",
+    title: t("title"),
+    description: t("description"),
+  });
+}
 
 export default async function AboutPage() {
   const t = await getTranslations("site.about");
@@ -48,6 +69,12 @@ export default async function AboutPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-slate-600">
           {t("description")}
+        </p>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          {t("description2")}
+        </p>
+        <p className="mt-2 max-w-2xl text-sm text-slate-600">
+          {t("description3")}
         </p>
 
         <div className="mt-10 flex w-full flex-col gap-10">

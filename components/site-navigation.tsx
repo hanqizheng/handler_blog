@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -18,7 +19,7 @@ const localeLabelKeys: Record<Locale, "locale.zh-CN" | "locale.en"> = {
 export function SiteNavigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const t = useTranslations("site.nav");
-  const commonT = useTranslations("site.common");
+  const tCommon = useTranslations("site.common");
   const locale = useLocale() as Locale;
   const pathname = usePathname();
   const router = useRouter();
@@ -56,9 +57,11 @@ export function SiteNavigation() {
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center">
-          <img
+          <Image
             src="/brand/logo.svg"
-            alt={commonT("logoAlt")}
+            alt={tCommon("logoAlt")}
+            width={160}
+            height={40}
             className="h-10 w-auto"
           />
         </Link>
@@ -76,17 +79,18 @@ export function SiteNavigation() {
               {t(item.labelKey)}
             </Link>
           ))}
-          <div className="ml-1 flex items-center border border-slate-200">
+          <div className="ml-2 flex items-center border border-slate-300 bg-slate-50">
             {LOCALES.map((item) => (
               <button
                 key={item}
                 type="button"
                 onClick={() => handleLocaleChange(item)}
+                aria-pressed={locale === item}
                 className={cn(
-                  "px-2 py-1 text-[11px] transition",
+                  "border-l border-slate-200 px-2 py-1 text-[10px] leading-none transition-colors first:border-l-0",
                   locale === item
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-700 hover:bg-slate-100",
+                    ? "bg-slate-200 font-semibold text-slate-800"
+                    : "font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700",
                 )}
               >
                 {t(localeLabelKeys[item])}

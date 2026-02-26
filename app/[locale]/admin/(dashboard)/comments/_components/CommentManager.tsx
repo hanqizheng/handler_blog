@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-query";
@@ -64,13 +64,10 @@ export function CommentManager({
   const [dirty, setDirty] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    setDirty(false);
-    setIsSubmitting(false);
-  }, [drawerMode, editableComment?.id, replyTargetComment?.id]);
-
   const navigateDrawer = useCallback(
     (mode: "edit" | "reply" | null, id?: number | null) => {
+      setDirty(false);
+      setIsSubmitting(false);
       const nextUrl = buildDrawerUrl(
         pathname,
         new URLSearchParams(searchParams.toString()),

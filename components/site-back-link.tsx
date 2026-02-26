@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { LOCALES } from "@/constants/i18n";
@@ -76,19 +76,9 @@ export function SiteBackLink({
     () => sanitizeInternalPath(fromParam),
     [fromParam],
   );
-  const [target, setTarget] = useState(fallbackHref);
-
-  useEffect(() => {
-    if (fromTarget) {
-      setTarget(fromTarget);
-      return;
-    }
-
-    const referrerPath = getSameOriginReferrerPath();
-    setTarget(referrerPath ?? fallbackHref);
-  }, [fallbackHref, fromTarget]);
 
   const handleClick = () => {
+    const target = fromTarget ?? getSameOriginReferrerPath() ?? fallbackHref;
     router.push(target as Parameters<typeof router.push>[0]);
   };
 

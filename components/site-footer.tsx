@@ -1,12 +1,14 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { LinkIcon } from "lucide-react";
 
 import { QiniuImage } from "@/components/qiniu-image";
+import { getSiteName } from "@/lib/seo";
 import { getFooterFriendLinks, getSiteContactConfig } from "@/lib/site-config";
 
 export async function SiteFooter() {
   const t = await getTranslations("site.footer");
-  const commonT = await getTranslations("site.common");
+  const siteName = getSiteName();
   const currentYear = new Date().getFullYear();
   const [contact, footerLinks] = await Promise.all([
     getSiteContactConfig(),
@@ -18,10 +20,12 @@ export async function SiteFooter() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid gap-8 md:grid-cols-[1.3fr_1fr_1fr]">
           <div className="space-y-4">
-            <img
-              alt={commonT("logoAlt")}
-              className="h-10 w-auto"
+            <Image
               src="/brand/logo.svg"
+              alt={siteName}
+              width={160}
+              height={40}
+              className="h-10 w-auto"
             />
             <p className="max-w-xs text-sm leading-relaxed text-slate-600">
               {t("tagline")}
@@ -78,7 +82,7 @@ export async function SiteFooter() {
         </div>
 
         <p className="mt-4 text-xs text-slate-500">
-          {t("copyright", { year: currentYear })}
+          {t("copyright", { year: currentYear, siteName })}
         </p>
       </div>
     </footer>

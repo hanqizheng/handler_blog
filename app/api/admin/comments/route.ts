@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { comments, posts } from "@/db/schema";
+import { getAdminSession } from "@/lib/admin-auth";
 import { normalizeCommentContent } from "@/utils/comments";
 
 export const runtime = "nodejs";
@@ -20,6 +21,14 @@ function parseId(value: unknown) {
 }
 
 export async function POST(request: Request) {
+  const session = await getAdminSession();
+  if (!session) {
+    return Response.json(
+      { ok: false, error: "unauthorized" },
+      { status: 401 },
+    );
+  }
+
   let payload: unknown = null;
   try {
     payload = await request.json();

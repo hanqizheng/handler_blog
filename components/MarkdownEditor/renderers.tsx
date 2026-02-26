@@ -1,5 +1,6 @@
 import React from "react";
 
+import { Loader2 } from "lucide-react";
 import type { RenderElementProps, RenderLeafProps } from "slate-react";
 
 import { QiniuImage } from "@/components/qiniu-image";
@@ -89,12 +90,17 @@ export const Element: React.FC<RenderElementProps> = ({
     case "image":
       return (
         <div className="my-3" {...attributes}>
-          <div contentEditable={false}>
+          <div contentEditable={false} className="relative inline-block">
             <QiniuImage
               src={currentElement.url}
               alt={currentElement.alt ?? ""}
               className="max-w-full rounded-md border border-slate-200"
             />
+            {currentElement.loading && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/40">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+              </div>
+            )}
           </div>
           {children}
         </div>

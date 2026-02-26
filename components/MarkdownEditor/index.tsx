@@ -12,7 +12,7 @@ import React, {
 
 import isHotkey from "is-hotkey";
 import type { Descendant, Range } from "slate";
-import { Transforms, createEditor } from "slate";
+import { Editor, Transforms, createEditor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, ReactEditor, Slate, withReact } from "slate-react";
 
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import {
   DEFAULT_MAX_FILE_SIZE,
+  compressImageIfNeeded,
   isTypeAllowed,
   resolveFileSizeLimit,
   useQiniuUpload,
@@ -113,17 +114,20 @@ export const MarkdownEditor = React.forwardRef<
     if (markdownValue === lastSyncedMarkdownRef.current) {
       return;
     }
+    // Sync external controlled value into Slate state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditorValue(deserializeFromMarkdown(markdownValue));
     lastSyncedMarkdownRef.current = markdownValue;
     setSlateVersion((prev) => prev + 1);
   }, [markdownValue]);
 
   useEffect(() => {
+    const pendingImages = pendingImagesRef.current;
     return () => {
-      pendingImagesRef.current.forEach((_, url) => {
+      pendingImages.forEach((_, url) => {
         URL.revokeObjectURL(url);
       });
-      pendingImagesRef.current.clear();
+      pendingImages.clear();
     };
   }, []);
 
@@ -147,7 +151,7 @@ export const MarkdownEditor = React.forwardRef<
       lastSyncedMarkdownRef.current = markdown;
       setMarkdownValue(markdown);
     },
-    [disabled, readOnly, setMarkdownValue],
+    [disabled, editor.selection, readOnly, setMarkdownValue],
   );
 
   const insertImageFiles = useCallback(
@@ -156,9 +160,7 @@ export const MarkdownEditor = React.forwardRef<
         return;
       }
 
-      const imageFiles = files.filter((file) =>
-        file.type.startsWith("image/"),
-      );
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
       if (imageFiles.length === 0) {
         return;
       }
@@ -167,60 +169,134 @@ export const MarkdownEditor = React.forwardRef<
         Transforms.select(editor, lastSelectionRef.current);
       }
 
-      for (const file of imageFiles) {
+      for (const rawFile of imageFiles) {
         const allowedTypes =
           imageUpload?.allowedTypes ?? DEFAULT_IMAGE_ALLOWED_TYPES;
         const maxFileSize = imageUpload?.maxFileSize ?? DEFAULT_MAX_FILE_SIZE;
         const maxFileSizeByType = imageUpload?.maxFileSizeByType;
 
-        if (!isTypeAllowed(file, allowedTypes)) {
-          toast.error(`图片 ${file.name} 类型不支持`);
+        if (!isTypeAllowed(rawFile, allowedTypes)) {
+          toast.error(`图片 ${rawFile.name} 类型不支持`);
           continue;
         }
 
         const sizeLimit = resolveFileSizeLimit(
-          file.type,
+          rawFile.type,
           maxFileSizeByType,
           maxFileSize,
         );
-        if (file.size > sizeLimit) {
-          toast.error(`图片 ${file.name} 超过大小限制`);
-          continue;
-        }
+
+        const findImageEntry = (url: string) => {
+          const [entry] = Editor.nodes(editor, {
+            at: [],
+            match: (n) =>
+              !Editor.isEditor(n) &&
+              "type" in n &&
+              n.type === "image" &&
+              (n as MarkdownElement).url === url,
+          });
+          return entry;
+        };
+
+        const blobUrl = URL.createObjectURL(rawFile);
+        const imageNode: MarkdownElement = {
+          type: "image",
+          url: blobUrl,
+          alt: rawFile.name,
+          loading: true,
+          children: [{ text: "" }],
+        };
+        Transforms.insertNodes(editor, imageNode);
+        Transforms.insertNodes(editor, {
+          type: "paragraph",
+          children: [{ text: "" }],
+        } satisfies MarkdownElement);
 
         if (deferUpload) {
-          const objectUrl = URL.createObjectURL(file);
-          pendingImagesRef.current.set(objectUrl, file);
-          const imageNode: MarkdownElement = {
-            type: "image",
-            url: objectUrl,
-            alt: file.name,
-            children: [{ text: "" }],
-          };
-          Transforms.insertNodes(editor, imageNode);
-          Transforms.insertNodes(editor, {
-            type: "paragraph",
-            children: [{ text: "" }],
-          } satisfies MarkdownElement);
+          if (rawFile.size > sizeLimit) {
+            try {
+              const compressed = await compressImageIfNeeded(
+                rawFile,
+                sizeLimit,
+              );
+              if (compressed.size > sizeLimit) {
+                const entry = findImageEntry(blobUrl);
+                if (entry) {
+                  Transforms.removeNodes(editor, { at: entry[1] });
+                }
+                URL.revokeObjectURL(blobUrl);
+                toast.error(`图片 ${rawFile.name} 超过大小限制`);
+                continue;
+              }
+              const newBlobUrl = URL.createObjectURL(compressed);
+              pendingImagesRef.current.set(newBlobUrl, compressed);
+              const entry = findImageEntry(blobUrl);
+              if (entry) {
+                Transforms.setNodes(
+                  editor,
+                  {
+                    url: newBlobUrl,
+                    loading: false,
+                  } as Partial<MarkdownElement>,
+                  { at: entry[1] },
+                );
+              }
+              URL.revokeObjectURL(blobUrl);
+            } catch {
+              const entry = findImageEntry(blobUrl);
+              if (entry) {
+                Transforms.removeNodes(editor, { at: entry[1] });
+              }
+              URL.revokeObjectURL(blobUrl);
+              toast.error(`图片 ${rawFile.name} 超过大小限制`);
+              continue;
+            }
+          } else {
+            pendingImagesRef.current.set(blobUrl, rawFile);
+            const entry = findImageEntry(blobUrl);
+            if (entry) {
+              Transforms.setNodes(
+                editor,
+                { loading: false } as Partial<MarkdownElement>,
+                { at: entry[1] },
+              );
+            }
+          }
           continue;
         }
 
         try {
+          let file = rawFile;
+          if (file.size > sizeLimit) {
+            file = await compressImageIfNeeded(file, sizeLimit);
+            if (file.size > sizeLimit) {
+              const entry = findImageEntry(blobUrl);
+              if (entry) {
+                Transforms.removeNodes(editor, { at: entry[1] });
+              }
+              URL.revokeObjectURL(blobUrl);
+              toast.error(`图片 ${rawFile.name} 超过大小限制`);
+              continue;
+            }
+          }
           const result = await uploadFile(file);
-          const imageNode: MarkdownElement = {
-            type: "image",
-            url: result.url,
-            alt: file.name,
-            children: [{ text: "" }],
-          };
-          Transforms.insertNodes(editor, imageNode);
-          Transforms.insertNodes(editor, {
-            type: "paragraph",
-            children: [{ text: "" }],
-          } satisfies MarkdownElement);
+          const entry = findImageEntry(blobUrl);
+          if (entry) {
+            Transforms.setNodes(
+              editor,
+              { url: result.url, loading: false } as Partial<MarkdownElement>,
+              { at: entry[1] },
+            );
+          }
+          URL.revokeObjectURL(blobUrl);
         } catch (error) {
+          const entry = findImageEntry(blobUrl);
+          if (entry) {
+            Transforms.removeNodes(editor, { at: entry[1] });
+          }
+          URL.revokeObjectURL(blobUrl);
           toast.error(
-            `图片 ${file.name} 上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
+            `图片 ${rawFile.name} 上传失败: ${error instanceof Error ? error.message : "未知错误"}`,
           );
         }
       }
@@ -316,7 +392,7 @@ export const MarkdownEditor = React.forwardRef<
         Transforms.insertFragment(editor, nodes);
       }
     },
-    [disabled, insertImageFiles, readOnly, imageUploadEnabled],
+    [disabled, editor, imageUploadEnabled, insertImageFiles, readOnly],
   );
 
   const handleDrop = useCallback(
@@ -390,6 +466,30 @@ export const MarkdownEditor = React.forwardRef<
           }
           pendingImagesRef.current.delete(url);
         });
+      },
+      replaceImageUrls: (replacements: Map<string, string>) => {
+        const imageEntries = Array.from(
+          Editor.nodes(editor, {
+            at: [],
+            match: (n) =>
+              !Editor.isEditor(n) &&
+              "type" in n &&
+              n.type === "image" &&
+              typeof (n as MarkdownElement).url === "string" &&
+              replacements.has((n as MarkdownElement).url!),
+          }),
+        );
+        for (const [, path] of imageEntries) {
+          const node = editor.children[path[0]] as MarkdownElement | undefined;
+          const oldUrl = node?.url;
+          if (oldUrl && replacements.has(oldUrl)) {
+            Transforms.setNodes(
+              editor,
+              { url: replacements.get(oldUrl) } as Partial<MarkdownElement>,
+              { at: path },
+            );
+          }
+        }
       },
     }),
     [editorValue, editor, setMarkdownValue],
