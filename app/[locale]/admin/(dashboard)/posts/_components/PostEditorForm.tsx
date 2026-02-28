@@ -256,6 +256,10 @@ export function PostEditorForm({
   };
 
   const handleCancel = () => {
+    if (isDirty && !window.confirm("有未保存的更改，确定要离开吗？")) {
+      return;
+    }
+
     if (onCancel) {
       onCancel();
       return;
