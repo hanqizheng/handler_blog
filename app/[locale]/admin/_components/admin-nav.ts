@@ -27,7 +27,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { href: "/admin", label: "概览", icon: LayoutDashboardIcon, order: 0 },
   { href: "/admin/posts", label: "文章管理", icon: FileTextIcon, order: 10 },
   {
-    href: "/admin/post-categories",
+    href: "/admin/categories",
     label: "分类管理",
     icon: TagIcon,
     order: 15,

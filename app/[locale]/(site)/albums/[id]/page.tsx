@@ -1,10 +1,15 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { db } from "@/db";
-import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
+import {
+  commentCaptchaSettings,
+  photoAlbumPhotos,
+  photoAlbums,
+} from "@/db/schema";
+import { CommentSection } from "@/components/comment-section";
 import { ImagePreviewGallery } from "@/components/image-preview";
 import { Link } from "@/i18n/navigation";
 import { buildPageMetadata, createTextExcerpt, resolveLocale } from "@/lib/seo";
@@ -78,7 +83,9 @@ export async function generateMetadata({
   });
 }
 
-export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) {
+export default async function AlbumDetailPage({
+  params,
+}: AlbumDetailPageProps) {
   const t = await getTranslations("site.albumDetail");
   const { id: rawId } = await params;
   const id = parseId(rawId);
@@ -97,6 +104,13 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
     .from(photoAlbumPhotos)
     .where(eq(photoAlbumPhotos.albumId, album.id))
     .orderBy(asc(photoAlbumPhotos.createdAt));
+
+  const [captchaSetting] = await db
+    .select({ isEnabled: commentCaptchaSettings.isEnabled })
+    .from(commentCaptchaSettings)
+    .orderBy(desc(commentCaptchaSettings.id))
+    .limit(1);
+  const captchaEnabled = (captchaSetting?.isEnabled ?? 0) === 1;
 
   const images = photos.map((photo) => ({
     src: photo.imageUrl,
@@ -118,6 +132,7 @@ export default async function AlbumDetailPage({ params }: AlbumDetailPageProps) 
           <ImagePreviewGallery images={images} />
         )}
       </section>
+      <CommentSection albumId={album.id} captchaEnabled={captchaEnabled} />
       <p className="mt-8">
         <Link href="/albums">{t("backToAlbums")}</Link>
       </p>

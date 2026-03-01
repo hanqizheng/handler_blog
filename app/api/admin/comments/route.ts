@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { comments, posts } from "@/db/schema";
+import { comments, photoAlbums, posts } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-auth";
 import { normalizeCommentContent } from "@/utils/comments";
 
@@ -23,10 +23,7 @@ function parseId(value: unknown) {
 export async function POST(request: Request) {
   const session = await getAdminSession();
   if (!session) {
-    return Response.json(
-      { ok: false, error: "unauthorized" },
-      { status: 401 },
-    );
+    return Response.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
   let payload: unknown = null;
@@ -38,50 +35,79 @@ export async function POST(request: Request) {
 
   const data = payload as {
     postId?: unknown;
+    albumId?: unknown;
     parentId?: unknown;
     content?: unknown;
     status?: unknown;
   };
 
   const postId = parseId(data?.postId);
+  const albumId = parseId(data?.albumId);
   const parentId = parseId(data?.parentId);
   const rawContent = typeof data?.content === "string" ? data.content : "";
   const content = normalizeCommentContent(rawContent);
 
-  if (!postId || !content) {
+  if ((!postId && !albumId) || (postId && albumId) || !content) {
     return Response.json(
-      { ok: false, error: "postId 和内容不能为空" },
+      { ok: false, error: "postId/albumId（二选一）和内容不能为空" },
       { status: 400 },
     );
   }
 
-  const [post] = await db
-    .select({ id: posts.id })
-    .from(posts)
-    .where(eq(posts.id, postId))
-    .limit(1);
-  if (!post) {
-    return Response.json({ ok: false, error: "文章不存在" }, { status: 404 });
+  if (postId) {
+    const [post] = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .limit(1);
+    if (!post) {
+      return Response.json({ ok: false, error: "文章不存在" }, { status: 404 });
+    }
   }
 
-  let parent: { id: number; postId: number; parentId: number | null } | null =
-    null;
+  if (albumId) {
+    const [album] = await db
+      .select({ id: photoAlbums.id })
+      .from(photoAlbums)
+      .where(eq(photoAlbums.id, albumId))
+      .limit(1);
+    if (!album) {
+      return Response.json({ ok: false, error: "相册不存在" }, { status: 404 });
+    }
+  }
+
+  let parent: {
+    id: number;
+    postId: number | null;
+    albumId: number | null;
+    parentId: number | null;
+  } | null = null;
   if (parentId) {
     const [parentItem] = await db
       .select({
         id: comments.id,
         postId: comments.postId,
+        albumId: comments.albumId,
         parentId: comments.parentId,
       })
       .from(comments)
       .where(eq(comments.id, parentId))
       .limit(1);
     if (!parentItem) {
-      return Response.json({ ok: false, error: "父评论不存在" }, { status: 404 });
+      return Response.json(
+        { ok: false, error: "父评论不存在" },
+        { status: 404 },
+      );
     }
-    if (parentItem.postId !== postId) {
+    if (postId && parentItem.postId !== postId) {
       return Response.json(
         { ok: false, error: "父评论与文章不匹配" },
+        { status: 400 },
+      );
+    }
+    if (albumId && parentItem.albumId !== albumId) {
+      return Response.json(
+        { ok: false, error: "父评论与相册不匹配" },
         { status: 400 },
       );
     }
@@ -100,7 +126,8 @@ export async function POST(request: Request) {
     : "visible";
 
   await db.insert(comments).values({
-    postId,
+    postId: postId ?? null,
+    albumId: albumId ?? null,
     parentId: parent?.id ?? null,
     content,
     status,

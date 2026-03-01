@@ -55,12 +55,17 @@ export async function POST(request: Request) {
     name?: unknown;
     description?: unknown;
     coverUrl?: unknown;
+    categoryId?: unknown;
   };
   const name = typeof data?.name === "string" ? data.name.trim() : "";
   const description =
     typeof data?.description === "string" ? data.description.trim() : "";
   const coverUrl =
     typeof data?.coverUrl === "string" ? data.coverUrl.trim() : "";
+  const categoryId =
+    typeof data?.categoryId === "number" && Number.isInteger(data.categoryId)
+      ? data.categoryId
+      : 1;
 
   if (!name) {
     return NextResponse.json(
@@ -77,6 +82,7 @@ export async function POST(request: Request) {
     description,
     slug,
     coverUrl: coverUrl || null,
+    categoryId,
   });
 
   return NextResponse.json({ ok: true });

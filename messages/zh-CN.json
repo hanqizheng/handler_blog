@@ -67,7 +67,8 @@
       "title": "相册列表",
       "description": "按主题整理的影像记录与相册归档。",
       "empty": "暂无相册",
-      "noCover": "暂无封面"
+      "noCover": "暂无封面",
+      "allCategories": "全部"
     },
     "albumDetail": {
       "notFound": "相册不存在",

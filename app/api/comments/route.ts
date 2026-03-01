@@ -7,6 +7,7 @@ import {
   commentCaptchaSettings,
   commentCaptchaStates,
   comments,
+  photoAlbums,
   posts,
 } from "@/db/schema";
 import { verifyAliyunCaptcha } from "@/lib/aliyun-captcha";
@@ -188,9 +189,17 @@ async function isCommentCaptchaEnabled() {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const postId = parsePositiveInt(url.searchParams.get("postId"));
-  if (!postId) {
-    return Response.json({ ok: false, error: "postId 无效" }, { status: 400 });
+  const albumId = parsePositiveInt(url.searchParams.get("albumId"));
+  if (!postId && !albumId) {
+    return Response.json(
+      { ok: false, error: "postId 或 albumId 无效" },
+      { status: 400 },
+    );
   }
+
+  const targetFilter = postId
+    ? eq(comments.postId, postId)
+    : eq(comments.albumId, albumId!);
 
   const page = parsePositiveInt(url.searchParams.get("page")) ?? 1;
   const limitParam = parsePositiveInt(url.searchParams.get("limit"));
@@ -210,7 +219,7 @@ export async function GET(request: Request) {
     .from(comments)
     .where(
       and(
-        eq(comments.postId, postId),
+        targetFilter,
         eq(comments.status, "visible"),
         isNull(comments.parentId),
       ),
@@ -234,7 +243,7 @@ export async function GET(request: Request) {
           .from(comments)
           .where(
             and(
-              eq(comments.postId, postId),
+              targetFilter,
               eq(comments.status, "visible"),
               inArray(comments.parentId, parentIds),
             ),
@@ -282,6 +291,7 @@ export async function POST(request: Request) {
 
   const data = payload as {
     postId?: unknown;
+    albumId?: unknown;
     content?: unknown;
     website?: unknown;
     captchaVerifyParam?: unknown;
@@ -296,6 +306,15 @@ export async function POST(request: Request) {
         : NaN;
   const postId =
     Number.isInteger(rawPostId) && rawPostId > 0 ? rawPostId : null;
+
+  const rawAlbumId =
+    typeof data?.albumId === "number"
+      ? data.albumId
+      : typeof data?.albumId === "string"
+        ? Number(data.albumId)
+        : NaN;
+  const albumId =
+    Number.isInteger(rawAlbumId) && rawAlbumId > 0 ? rawAlbumId : null;
 
   const honeypot = typeof data?.website === "string" ? data.website.trim() : "";
   if (honeypot) {
@@ -319,21 +338,35 @@ export async function POST(request: Request) {
         ? "declined"
         : "unknown";
 
-  if (!postId || !content) {
+  if ((!postId && !albumId) || (postId && albumId) || !content) {
     return Response.json(
-      { ok: false, error: "postId 和内容不能为空" },
+      { ok: false, error: "postId/albumId（二选一）和内容不能为空" },
       { status: 400 },
     );
   }
 
-  const [post] = await db
-    .select({ id: posts.id })
-    .from(posts)
-    .where(eq(posts.id, postId))
-    .limit(1);
+  if (postId) {
+    const [post] = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .limit(1);
 
-  if (!post) {
-    return Response.json({ ok: false, error: "文章不存在" }, { status: 404 });
+    if (!post) {
+      return Response.json({ ok: false, error: "文章不存在" }, { status: 404 });
+    }
+  }
+
+  if (albumId) {
+    const [album] = await db
+      .select({ id: photoAlbums.id })
+      .from(photoAlbums)
+      .where(eq(photoAlbums.id, albumId))
+      .limit(1);
+
+    if (!album) {
+      return Response.json({ ok: false, error: "相册不存在" }, { status: 404 });
+    }
   }
 
   const ip = getClientIp(request) ?? "unknown";
@@ -533,7 +566,8 @@ export async function POST(request: Request) {
   const userAgent = (request.headers.get("user-agent") ?? "").slice(0, 255);
 
   const insertResult = await db.insert(comments).values({
-    postId,
+    postId: postId ?? null,
+    albumId: albumId ?? null,
     parentId: null,
     content,
     ipHash,
@@ -578,6 +612,9 @@ export async function POST(request: Request) {
     item = hydrateItem(freshById);
   } else if (!insertedId) {
     // Fallback for drivers that don't expose insertId consistently.
+    const fallbackFilter = postId
+      ? eq(comments.postId, postId)
+      : eq(comments.albumId, albumId!);
     const [fallback] = await db
       .select({
         id: comments.id,
@@ -587,7 +624,7 @@ export async function POST(request: Request) {
       .from(comments)
       .where(
         and(
-          eq(comments.postId, postId),
+          fallbackFilter,
           eq(comments.ipHash, ipHash),
           eq(comments.content, content),
           gte(comments.createdAt, new Date(Date.now() - 2 * 60 * 1000)),

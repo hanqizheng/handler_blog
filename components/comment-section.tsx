@@ -64,11 +64,15 @@ const loadCaptchaScript = () => {
 
 export function CommentSection({
   postId,
+  albumId,
   captchaEnabled = false,
 }: {
-  postId: number;
+  postId?: number;
+  albumId?: number;
   captchaEnabled?: boolean;
 }) {
+  const targetId = postId ?? albumId;
+  const targetParam = postId ? `postId=${postId}` : `albumId=${albumId}`;
   const [items, setItems] = useState<CommentItem[]>([]);
   const [content, setContent] = useState("");
   const [honeypot, setHoneypot] = useState("");
@@ -84,7 +88,6 @@ export function CommentSection({
     show?: () => void;
   } | null>(null);
   const payloadRef = useRef({
-    postId,
     content: "",
     website: "",
     cookieConsent: "unknown" as "unknown" | "accepted" | "declined",
@@ -95,12 +98,11 @@ export function CommentSection({
 
   useEffect(() => {
     payloadRef.current = {
-      postId,
       content,
       website: honeypot,
       cookieConsent,
     };
-  }, [postId, content, honeypot, cookieConsent]);
+  }, [content, honeypot, cookieConsent]);
 
   useEffect(() => {
     if (!captchaEnabled) {
@@ -155,7 +157,7 @@ export function CommentSection({
       }
 
       const body: Record<string, unknown> = {
-        postId: payload.postId,
+        ...(postId ? { postId } : { albumId }),
         content: trimmed,
         website: payload.website,
       };
@@ -318,7 +320,7 @@ export function CommentSection({
       setError(null);
       try {
         const response = await fetch(
-          `/api/comments?postId=${postId}&page=1&limit=20`,
+          `/api/comments?${targetParam}&page=1&limit=20`,
           { cache: "no-store" },
         );
         const data = (await response.json()) as {
@@ -351,7 +353,7 @@ export function CommentSection({
     return () => {
       active = false;
     };
-  }, [postId]);
+  }, [targetId]);
 
   const submitComment = async () => {
     if (submitting) {

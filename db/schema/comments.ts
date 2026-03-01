@@ -8,13 +8,15 @@ import {
   varchar,
 } from "drizzle-orm/mysql-core";
 
+import { photoAlbums } from "./photo-albums";
 import { posts } from "./posts";
 
 export const comments = mysqlTable(
   "comments",
   {
     id: int("id").autoincrement().primaryKey(),
-    postId: int("post_id").notNull().references(() => posts.id),
+    postId: int("post_id").references(() => posts.id),
+    albumId: int("album_id").references(() => photoAlbums.id),
     parentId: int("parent_id"),
     content: text("content").notNull(),
     status: mysqlEnum("status", ["visible", "hidden", "spam"])
@@ -28,6 +30,11 @@ export const comments = mysqlTable(
     postIdIdx: index("comments_post_id_idx").on(table.postId),
     postIdCreatedAtIdx: index("comments_post_id_created_at_idx").on(
       table.postId,
+      table.createdAt,
+    ),
+    albumIdIdx: index("comments_album_id_idx").on(table.albumId),
+    albumIdCreatedAtIdx: index("comments_album_id_created_at_idx").on(
+      table.albumId,
       table.createdAt,
     ),
     parentIdIdx: index("comments_parent_id_idx").on(table.parentId),

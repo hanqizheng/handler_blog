@@ -20,7 +20,8 @@ type EditorLayout = "card" | "plain";
 interface CommentEditorFormProps {
   mode: EditorMode;
   commentId?: number;
-  postId: number;
+  postId?: number | null;
+  albumId?: number | null;
   parentId?: number | null;
   initialContent?: string;
   initialStatus?: CommentStatus;
@@ -38,6 +39,7 @@ export function CommentEditorForm({
   mode,
   commentId,
   postId,
+  albumId,
   parentId,
   initialContent = "",
   initialStatus = "visible",
@@ -98,7 +100,11 @@ export function CommentEditorForm({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             mode === "reply"
-              ? { postId, parentId, content: trimmedContent }
+              ? {
+                  ...(postId ? { postId } : { albumId }),
+                  parentId,
+                  content: trimmedContent,
+                }
               : { content: trimmedContent, status },
           ),
         },

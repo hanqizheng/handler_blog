@@ -10,11 +10,20 @@ import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface AlbumCreateFormProps {
-  drawerMode: "create" | null;
+interface CategoryOption {
+  id: number;
+  name: string;
 }
 
-export function AlbumCreateForm({ drawerMode }: AlbumCreateFormProps) {
+interface AlbumCreateFormProps {
+  drawerMode: "create" | null;
+  categories: CategoryOption[];
+}
+
+export function AlbumCreateForm({
+  drawerMode,
+  categories,
+}: AlbumCreateFormProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -22,6 +31,7 @@ export function AlbumCreateForm({ drawerMode }: AlbumCreateFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [categoryId, setCategoryId] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -35,6 +45,7 @@ export function AlbumCreateForm({ drawerMode }: AlbumCreateFormProps) {
       setName("");
       setDescription("");
       setCoverFile(null);
+      setCategoryId(1);
       setDirty(false);
     }
   }, [drawerMode]);
@@ -59,7 +70,7 @@ export function AlbumCreateForm({ drawerMode }: AlbumCreateFormProps) {
       const response = await fetch("/api/admin/albums", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, description, coverUrl }),
+        body: JSON.stringify({ name, description, coverUrl, categoryId }),
       });
       const data = (await response.json().catch(() => null)) as {
         ok?: boolean;
@@ -120,6 +131,24 @@ export function AlbumCreateForm({ drawerMode }: AlbumCreateFormProps) {
               }}
               placeholder="相册说明"
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="album-category">分类</Label>
+            <select
+              id="album-category"
+              value={categoryId}
+              onChange={(event) => {
+                if (!dirty) setDirty(true);
+                setCategoryId(Number(event.target.value));
+              }}
+              className="border-input focus-visible:ring-ring flex h-9 w-full border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
+            >
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="album-cover">封面（可选）</Label>

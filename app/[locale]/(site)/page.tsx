@@ -320,7 +320,13 @@ export default async function HomePage() {
                     )}
                     {product.linkUrl ? (
                       <a
-                        href={product.linkUrl}
+                        href={
+                          product.linkUrl.startsWith("http")
+                            ? product.linkUrl
+                            : `https://${product.linkUrl}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
                         className="mt-auto inline-flex items-center pt-6 text-sm font-medium text-slate-700 transition hover:text-slate-900"
                       >
                         {t("productLearnMore")}
