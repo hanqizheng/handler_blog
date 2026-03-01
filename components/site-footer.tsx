@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { LinkIcon } from "lucide-react";
 
 import { QiniuImage } from "@/components/qiniu-image";
@@ -8,7 +8,8 @@ import { getFooterFriendLinks, getSiteContactConfig } from "@/lib/site-config";
 
 export async function SiteFooter() {
   const t = await getTranslations("site.footer");
-  const siteName = getSiteName();
+  const locale = await getLocale();
+  const siteName = getSiteName(locale);
   const currentYear = new Date().getFullYear();
   const [contact, footerLinks] = await Promise.all([
     getSiteContactConfig(),

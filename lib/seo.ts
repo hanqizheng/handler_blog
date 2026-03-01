@@ -14,7 +14,15 @@ function readEnv(name: string) {
   return value ? value : undefined;
 }
 
-export function getSiteName() {
+export function getSiteName(locale?: string | Locale) {
+  if (locale === "zh-CN") {
+    return (
+      readEnv("NEXT_PUBLIC_SITE_NAME_ZH") ??
+      readEnv("NEXT_PUBLIC_SITE_NAME") ??
+      FALLBACK_SITE_NAME
+    );
+  }
+
   return readEnv("NEXT_PUBLIC_SITE_NAME") ?? FALLBACK_SITE_NAME;
 }
 
@@ -79,7 +87,9 @@ export function getLocalizedPath(locale: Locale, pathname: string) {
   return `/${locale}${normalizedPathname}`;
 }
 
-export function getLanguageAlternates(pathname: string): Record<string, string> {
+export function getLanguageAlternates(
+  pathname: string,
+): Record<string, string> {
   const alternates = Object.fromEntries(
     LOCALES.map((locale) => [locale, getLocalizedPath(locale, pathname)]),
   ) as Record<string, string>;
@@ -127,7 +137,7 @@ export function buildPageMetadata({
     robots: noIndex ? { index: false, follow: false } : undefined,
     openGraph: {
       type,
-      siteName: SITE_NAME,
+      siteName: getSiteName(locale),
       title,
       description,
       url: canonicalPath,

@@ -6,12 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { db } from "@/db";
 import { banners, posts, products } from "@/db/schema";
 import { QiniuImage } from "@/components/qiniu-image";
-import {
-  buildPageMetadata,
-  getSiteName,
-  resolveLocale,
-  SITE_NAME,
-} from "@/lib/seo";
+import { buildPageMetadata, getSiteName, resolveLocale } from "@/lib/seo";
 
 type HomePageProps = {
   params: Promise<{ locale: string }>;
@@ -27,15 +22,17 @@ export async function generateMetadata({
   return buildPageMetadata({
     locale,
     pathname: "/",
-    title: SITE_NAME,
+    title: getSiteName(locale),
     description: t("heroDescription"),
     absoluteTitle: true,
   });
 }
 
-export default async function HomePage() {
+export default async function HomePage({ params }: HomePageProps) {
+  const { locale: rawLocale } = await params;
+  const locale = resolveLocale(rawLocale);
   const t = await getTranslations("site.home");
-  const siteName = getSiteName();
+  const siteName = getSiteName(locale);
   const latestPosts = await db
     .select()
     .from(posts)
