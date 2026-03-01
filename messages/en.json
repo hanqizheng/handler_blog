@@ -67,7 +67,8 @@
       "title": "Albums",
       "description": "A curated collection of visual stories and albums.",
       "empty": "No albums yet.",
-      "noCover": "No cover image"
+      "noCover": "No cover image",
+      "allCategories": "All"
     },
     "albumDetail": {
       "notFound": "Album not found.",

@@ -33,8 +33,7 @@ type CleanupFailedCandidate = CleanupCandidate & {
 
 type QiniuDeleteTaskInsert = typeof qiniuDeleteTasks.$inferInsert;
 
-const normalizeObjectKey = (value: string) =>
-  value.trim().replace(/^\/+/, "");
+const normalizeObjectKey = (value: string) => value.trim().replace(/^\/+/, "");
 
 const getCleanupCandidates = (input: {
   albumId: number;
@@ -68,7 +67,10 @@ const getCleanupCandidates = (input: {
 
   for (const photo of input.photos) {
     const keyFromDb = normalizeObjectKey(photo.imageKey);
-    const parsedKey = extractQiniuObjectKey(photo.imageUrl, input.displayDomain);
+    const parsedKey = extractQiniuObjectKey(
+      photo.imageUrl,
+      input.displayDomain,
+    );
     const key = keyFromDb || parsedKey;
     if (!key) continue;
     pushCandidate({
@@ -96,7 +98,10 @@ export async function GET(
   const { id: rawId } = await context.params;
   const id = parseId(rawId);
   if (!id) {
-    return NextResponse.json({ ok: false, error: "invalid id" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "invalid id" },
+      { status: 400 },
+    );
   }
 
   const [album] = await db
@@ -105,7 +110,10 @@ export async function GET(
     .where(eq(photoAlbums.id, id))
     .limit(1);
   if (!album) {
-    return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "not found" },
+      { status: 404 },
+    );
   }
 
   const photos = await db
@@ -132,7 +140,10 @@ export async function DELETE(
   const { id: rawId } = await context.params;
   const id = parseId(rawId);
   if (!id) {
-    return NextResponse.json({ ok: false, error: "invalid id" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "invalid id" },
+      { status: 400 },
+    );
   }
 
   const [album] = await db
@@ -142,7 +153,10 @@ export async function DELETE(
     .limit(1);
 
   if (!album) {
-    return NextResponse.json({ ok: false, error: "not found" }, { status: 404 });
+    return NextResponse.json(
+      { ok: false, error: "not found" },
+      { status: 404 },
+    );
   }
 
   const photos = await db
@@ -190,7 +204,10 @@ export async function DELETE(
   } else {
     for (const candidate of cleanupCandidates) {
       try {
-        const { resp } = await bucketManager.delete(bucketName, candidate.objectKey);
+        const { resp } = await bucketManager.delete(
+          bucketName,
+          candidate.objectKey,
+        );
         const statusCode = resp.statusCode ?? 500;
         const responseData = (resp as { data?: { error?: string } }).data;
         if (statusCode !== 200 && statusCode !== 612) {
@@ -258,7 +275,10 @@ export async function PUT(
   const { id: rawId } = await context.params;
   const id = parseId(rawId);
   if (!id) {
-    return NextResponse.json({ ok: false, error: "invalid id" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "invalid id" },
+      { status: 400 },
+    );
   }
 
   let payload: unknown = null;
@@ -268,14 +288,22 @@ export async function PUT(
     payload = null;
   }
 
-  const data = payload as { coverUrl?: unknown };
+  const data = payload as { coverUrl?: unknown; categoryId?: unknown };
   const coverUrl =
     typeof data?.coverUrl === "string" ? data.coverUrl.trim() : "";
+  const categoryId =
+    typeof data?.categoryId === "number" && Number.isInteger(data.categoryId)
+      ? data.categoryId
+      : null;
 
-  await db
-    .update(photoAlbums)
-    .set({ coverUrl: coverUrl || null })
-    .where(eq(photoAlbums.id, id));
+  const updateData: Record<string, unknown> = {
+    coverUrl: coverUrl || null,
+  };
+  if (categoryId !== null) {
+    updateData.categoryId = categoryId;
+  }
+
+  await db.update(photoAlbums).set(updateData).where(eq(photoAlbums.id, id));
 
   return NextResponse.json({ ok: true });
 }

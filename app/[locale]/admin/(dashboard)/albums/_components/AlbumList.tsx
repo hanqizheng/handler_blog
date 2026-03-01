@@ -5,11 +5,18 @@ import { useRouter } from "next/navigation";
 
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
+import { QiniuImage } from "@/components/qiniu-image";
+import { formatDateYmd } from "@/utils/date";
 
 interface AlbumItem {
   id: number;
   name: string;
   slug: string;
+  description: string | null;
+  coverUrl: string | null;
+  categoryId: number;
+  categoryName: string | null;
+  createdAt: Date;
 }
 
 interface AlbumListProps {
@@ -62,13 +69,40 @@ export function AlbumList({ items }: AlbumListProps) {
       {items.map((item) => (
         <div
           key={item.id}
-          className="rounded-lg border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50"
+          className="overflow-hidden bg-slate-50 transition hover:bg-slate-100"
         >
-          <Link href={`/admin/albums/${item.id}`} className="block space-y-1">
-            <p className="text-base font-semibold text-slate-900">{item.name}</p>
-            <p className="text-xs text-slate-500">{item.slug}</p>
+          <Link href={`/admin/albums/${item.id}`} className="block">
+            {item.coverUrl ? (
+              <QiniuImage
+                src={item.coverUrl}
+                alt={item.name}
+                className="h-40 w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-40 w-full items-center justify-center bg-slate-100 text-sm text-slate-400">
+                暂无封面
+              </div>
+            )}
+            <div className="space-y-1 p-4">
+              <p className="font-semibold text-slate-900">{item.name}</p>
+              {item.description ? (
+                <p className="line-clamp-2 text-sm text-slate-500">
+                  {item.description}
+                </p>
+              ) : null}
+            </div>
           </Link>
-          <div className="mt-3 flex items-center justify-end">
+          <div className="flex items-center justify-between px-4 pb-3">
+            <div className="flex items-center gap-2">
+              {item.categoryName ? (
+                <span className="bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  {item.categoryName}
+                </span>
+              ) : null}
+              <span className="text-xs text-slate-400">
+                {formatDateYmd(item.createdAt)}
+              </span>
+            </div>
             <Button
               size="sm"
               variant="outline"
