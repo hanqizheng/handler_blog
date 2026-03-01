@@ -1,13 +1,13 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, isNotNull } from "drizzle-orm";
 
 import {
   parseDrawerState,
   type AdminSearchParams,
 } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { db } from "@/db";
-import { comments, posts } from "@/db/schema";
+import { comments, photoAlbums, posts } from "@/db/schema";
 
-import { CommentManager } from "./_components/CommentManager";
+import { CommentTabManager } from "./_components/CommentTabManager";
 
 const COMMENT_DRAWER_MODES = ["edit", "reply"] as const;
 
@@ -17,24 +17,42 @@ export default async function AdminCommentsPage({
   searchParams: Promise<AdminSearchParams>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const tab = resolvedSearchParams.tab === "album" ? "album" : "post";
   const { mode: drawerMode, id } = parseDrawerState(
     resolvedSearchParams,
     COMMENT_DRAWER_MODES,
   );
 
-  const items = await db
-    .select({
-      id: comments.id,
-      postId: comments.postId,
-      parentId: comments.parentId,
-      content: comments.content,
-      status: comments.status,
-      createdAt: comments.createdAt,
-      postTitle: posts.title,
-    })
-    .from(comments)
-    .leftJoin(posts, eq(comments.postId, posts.id))
-    .orderBy(desc(comments.createdAt), desc(comments.id));
+  const commentFields = {
+    id: comments.id,
+    postId: comments.postId,
+    albumId: comments.albumId,
+    parentId: comments.parentId,
+    content: comments.content,
+    status: comments.status,
+    createdAt: comments.createdAt,
+    postTitle: posts.title,
+    albumName: photoAlbums.name,
+  };
+
+  const orderBy = [desc(comments.createdAt), desc(comments.id)] as const;
+
+  const [postItems, albumItems] = await Promise.all([
+    db
+      .select(commentFields)
+      .from(comments)
+      .leftJoin(posts, eq(comments.postId, posts.id))
+      .leftJoin(photoAlbums, eq(comments.albumId, photoAlbums.id))
+      .where(isNotNull(comments.postId))
+      .orderBy(...orderBy),
+    db
+      .select(commentFields)
+      .from(comments)
+      .leftJoin(posts, eq(comments.postId, posts.id))
+      .leftJoin(photoAlbums, eq(comments.albumId, photoAlbums.id))
+      .where(isNotNull(comments.albumId))
+      .orderBy(...orderBy),
+  ]);
 
   const editableComment =
     drawerMode === "edit" && id
@@ -59,6 +77,7 @@ export default async function AdminCommentsPage({
             .select({
               id: comments.id,
               postId: comments.postId,
+              albumId: comments.albumId,
               parentId: comments.parentId,
               content: comments.content,
               createdAt: comments.createdAt,
@@ -70,11 +89,18 @@ export default async function AdminCommentsPage({
       : null;
 
   return (
-    <CommentManager
-      items={items}
-      drawerMode={drawerMode}
-      editableComment={editableComment}
-      replyTargetComment={replyTargetComment}
-    />
+    <section className="flex w-full flex-1 flex-col gap-6">
+      <div>
+        <h1 className="text-2xl font-semibold">评论管理</h1>
+      </div>
+      <CommentTabManager
+        activeTab={tab}
+        postItems={postItems}
+        albumItems={albumItems}
+        drawerMode={drawerMode}
+        editableComment={editableComment}
+        replyTargetComment={replyTargetComment}
+      />
+    </section>
   );
 }

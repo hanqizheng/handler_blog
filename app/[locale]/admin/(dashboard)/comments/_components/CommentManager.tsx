@@ -22,30 +22,34 @@ import { CommentRowActions } from "./CommentRowActions";
 
 type CommentListItem = {
   id: number;
-  postId: number;
+  postId: number | null;
+  albumId: number | null;
   parentId: number | null;
   content: string;
   status: "visible" | "hidden" | "spam";
   createdAt: string | Date;
   postTitle: string | null;
+  albumName: string | null;
 };
 
 type EditableComment = {
   id: number;
-  postId: number;
+  postId: number | null;
   content: string;
   status: "visible" | "hidden" | "spam";
 };
 
 type ReplyTargetComment = {
   id: number;
-  postId: number;
+  postId: number | null;
+  albumId: number | null;
   content: string;
   createdAt: string | Date;
   parentId: number | null;
 };
 
 interface CommentManagerProps {
+  source: "post" | "album";
   items: CommentListItem[];
   drawerMode: "edit" | "reply" | null;
   editableComment: EditableComment | null;
@@ -53,6 +57,7 @@ interface CommentManagerProps {
 }
 
 export function CommentManager({
+  source,
   items,
   drawerMode,
   editableComment,
@@ -97,83 +102,80 @@ export function CommentManager({
 
   return (
     <>
-      <section className="flex w-full flex-1 flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">评论管理</h1>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>评论列表</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
+      <Card>
+        <CardHeader>
+          <CardTitle>评论列表</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>{source === "post" ? "文章" : "相册"}</TableHead>
+                <TableHead>内容</TableHead>
+                <TableHead>回复</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>时间</TableHead>
+                <TableHead className="w-[280px]">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.length === 0 ? (
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>文章</TableHead>
-                  <TableHead>内容</TableHead>
-                  <TableHead>回复</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>时间</TableHead>
-                  <TableHead className="w-[280px]">操作</TableHead>
+                  <TableCell colSpan={7}>暂无评论</TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>暂无评论</TableCell>
-                  </TableRow>
-                ) : (
-                  items.map((item) => {
-                    const contentPreview =
-                      item.content.length > 80
-                        ? `${item.content.slice(0, 80)}...`
-                        : item.content;
+              ) : (
+                items.map((item) => {
+                  const contentPreview =
+                    item.content.length > 80
+                      ? `${item.content.slice(0, 80)}...`
+                      : item.content;
 
-                    return (
-                      <TableRow key={item.id}>
-                        <TableCell>{item.id}</TableCell>
-                        <TableCell>
-                          {item.postTitle ?? `文章 #${item.postId}`}
-                        </TableCell>
-                        <TableCell>{contentPreview}</TableCell>
-                        <TableCell>
-                          {item.parentId ? `回复 #${item.parentId}` : "-"}
-                        </TableCell>
-                        <TableCell>{item.status}</TableCell>
-                        <TableCell>
-                          {new Date(item.createdAt).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell>
+                        {source === "post"
+                          ? (item.postTitle ?? `文章 #${item.postId}`)
+                          : (item.albumName ?? `相册 #${item.albumId}`)}
+                      </TableCell>
+                      <TableCell>{contentPreview}</TableCell>
+                      <TableCell>
+                        {item.parentId ? `回复 #${item.parentId}` : "-"}
+                      </TableCell>
+                      <TableCell>{item.status}</TableCell>
+                      <TableCell>
+                        {new Date(item.createdAt).toLocaleString("zh-CN")}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigateDrawer("edit", item.id)}
+                          >
+                            编辑
+                          </Button>
+                          {!item.parentId ? (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => navigateDrawer("edit", item.id)}
+                              onClick={() => navigateDrawer("reply", item.id)}
                             >
-                              编辑
+                              回复
                             </Button>
-                            {!item.parentId ? (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => navigateDrawer("reply", item.id)}
-                              >
-                                回复
-                              </Button>
-                            ) : null}
-                            <CommentRowActions id={item.id} />
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </section>
+                          ) : null}
+                          <CommentRowActions id={item.id} />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
       <AdminFormDrawer
         open={isDrawerOpen}
         onOpenChange={(open) => {
@@ -231,6 +233,7 @@ export function CommentManager({
             <CommentEditorForm
               mode="reply"
               postId={replyTargetComment.postId}
+              albumId={replyTargetComment.albumId}
               parentId={replyTargetComment.id}
               layout="plain"
               showHeader={false}
