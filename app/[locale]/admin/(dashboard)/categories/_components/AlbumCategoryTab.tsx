@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { toPostCategorySlug } from "@/utils/post-category";
+import { toAlbumCategorySlug } from "@/utils/album-category";
 
 type CategoryItem = {
   id: number;
@@ -28,7 +28,7 @@ type CategoryItem = {
   isActive: number;
 };
 
-interface PostCategoryManagerProps {
+interface AlbumCategoryTabProps {
   items: CategoryItem[];
   drawerMode: "create" | "edit" | null;
   editingItem: CategoryItem | null;
@@ -41,11 +41,11 @@ const DEFAULT_FORM = {
   isActive: true,
 };
 
-export function PostCategoryManager({
+export function AlbumCategoryTab({
   items,
   drawerMode,
   editingItem,
-}: PostCategoryManagerProps) {
+}: AlbumCategoryTabProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -97,7 +97,7 @@ export function PostCategoryManager({
 
   const handleDelete = async (id: number) => {
     if (!confirm("确定删除该分类吗？")) return;
-    const response = await fetch(`/api/admin/post-categories/${id}`, {
+    const response = await fetch(`/api/admin/album-categories/${id}`, {
       method: "DELETE",
     });
     const data = (await response.json().catch(() => null)) as {
@@ -112,7 +112,7 @@ export function PostCategoryManager({
   };
 
   const handleToggle = async (item: CategoryItem) => {
-    const response = await fetch(`/api/admin/post-categories/${item.id}`, {
+    const response = await fetch(`/api/admin/album-categories/${item.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive: item.isActive !== 1 }),
@@ -130,7 +130,7 @@ export function PostCategoryManager({
 
   const handleSubmit = async () => {
     const trimmedName = formValues.name.trim();
-    const resolvedSlug = toPostCategorySlug(formValues.slug || trimmedName);
+    const resolvedSlug = toAlbumCategorySlug(formValues.slug || trimmedName);
 
     if (!trimmedName) {
       alert("请输入分类名称");
@@ -145,7 +145,7 @@ export function PostCategoryManager({
     setIsSubmitting(true);
     try {
       if (drawerMode === "create") {
-        const response = await fetch("/api/admin/post-categories", {
+        const response = await fetch("/api/admin/album-categories", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -164,7 +164,7 @@ export function PostCategoryManager({
         }
       } else if (drawerMode === "edit" && editingItem) {
         const response = await fetch(
-          `/api/admin/post-categories/${editingItem.id}`,
+          `/api/admin/album-categories/${editingItem.id}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -196,7 +196,7 @@ export function PostCategoryManager({
   };
 
   const isDrawerOpen = drawerMode === "create" || drawerMode === "edit";
-  const slugPreview = toPostCategorySlug(formValues.slug || formValues.name);
+  const slugPreview = toAlbumCategorySlug(formValues.slug || formValues.name);
 
   return (
     <>
@@ -206,7 +206,7 @@ export function PostCategoryManager({
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>分类列表</CardTitle>
+            <CardTitle>相册分类列表</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -277,7 +277,7 @@ export function PostCategoryManager({
         }}
         title={drawerMode === "create" ? "新增分类" : "编辑分类"}
         description={
-          drawerMode === "create" ? "创建文章分类" : "更新分类信息与状态"
+          drawerMode === "create" ? "创建相册分类" : "更新分类信息与状态"
         }
         width={640}
         dirty={dirty}
@@ -291,9 +291,9 @@ export function PostCategoryManager({
       >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="post-category-name">分类名称</Label>
+            <Label htmlFor="album-category-name">分类名称</Label>
             <Input
-              id="post-category-name"
+              id="album-category-name"
               value={formValues.name}
               onChange={(event) => {
                 markDirty();
@@ -306,9 +306,9 @@ export function PostCategoryManager({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="post-category-slug">Slug（可选）</Label>
+            <Label htmlFor="album-category-slug">Slug（可选）</Label>
             <Input
-              id="post-category-slug"
+              id="album-category-slug"
               value={formValues.slug}
               onChange={(event) => {
                 markDirty();
@@ -323,9 +323,9 @@ export function PostCategoryManager({
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <div className="space-y-2">
-              <Label htmlFor="post-category-order">排序</Label>
+              <Label htmlFor="album-category-order">排序</Label>
               <Input
-                id="post-category-order"
+                id="album-category-order"
                 type="number"
                 value={formValues.sortOrder}
                 onChange={(event) => {
