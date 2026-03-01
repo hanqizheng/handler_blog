@@ -161,6 +161,13 @@ export async function DELETE(
     );
   }
 
+  if (id === 1) {
+    return NextResponse.json(
+      { ok: false, error: "默认分类不可删除" },
+      { status: 400 },
+    );
+  }
+
   const [usage] = await db
     .select({ count: sql<number>`count(*)` })
     .from(photoAlbums)

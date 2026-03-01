@@ -2,7 +2,12 @@ import { asc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { photoAlbumPhotos, photoAlbums, qiniuDeleteTasks } from "@/db/schema";
+import {
+  comments,
+  photoAlbumPhotos,
+  photoAlbums,
+  qiniuDeleteTasks,
+} from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-auth";
 import {
   createBucketManager,
@@ -250,6 +255,8 @@ export async function DELETE(
       await tx.insert(qiniuDeleteTasks).values(queuedTasks);
     }
 
+    await tx.delete(comments).where(eq(comments.albumId, id));
+    await tx.delete(photoAlbumPhotos).where(eq(photoAlbumPhotos.albumId, id));
     await tx.delete(photoAlbums).where(eq(photoAlbums.id, id));
   });
 
