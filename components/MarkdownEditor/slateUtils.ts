@@ -217,12 +217,17 @@ export const handleBackspaceAtBlockStart = (editor: Editor): boolean => {
   if (!match) return false;
 
   const [block, path] = match;
+  const element = block as unknown as MarkdownElement;
+
+  // Skip void nodes (e.g. images) — let Slate handle them natively.
+  // On iOS, stale selection can land inside a void's hidden text child,
+  // which would incorrectly convert the void to a paragraph.
+  if (Editor.isVoid(editor, element)) return false;
+
   const start = Editor.start(editor, path);
 
   // Check if cursor is at the start of the block
   if (!Point.equals(selection.anchor, start)) return false;
-
-  const element = block as unknown as MarkdownElement;
 
   // If it's a list item, unwrap from list
   if (element.type === "list-item") {
