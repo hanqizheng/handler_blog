@@ -5,6 +5,14 @@ import { siteContact } from "@/constants/site";
 import { db } from "@/db";
 import { friendLinks, products, siteProfiles } from "@/db/schema";
 
+function ensureAbsoluteUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed || /^https?:\/\//i.test(trimmed) || trimmed.startsWith("//")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
 export type FooterFriendLink = {
   id: string;
   name: string;
@@ -85,7 +93,7 @@ export const getFooterFriendLinks = cache(async () => {
       (item): FooterFriendLink => ({
         id: item.id,
         name: item.name.trim(),
-        href: item.href.trim(),
+        href: ensureAbsoluteUrl(item.href),
         iconUrl: item.iconUrl.trim(),
       }),
     );

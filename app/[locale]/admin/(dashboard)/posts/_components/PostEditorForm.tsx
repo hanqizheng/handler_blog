@@ -358,7 +358,7 @@ export function PostEditorForm({
       {!hideActions ? (
         <div className="flex items-center gap-3">
           <Button type="submit" disabled={isSaving}>
-            {isSaving ? "保存中..." : "保存"}
+            {isSaving ? "发布中..." : "发布"}
           </Button>
           <Button type="button" variant="ghost" onClick={handleCancel}>
             取消
