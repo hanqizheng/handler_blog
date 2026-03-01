@@ -5,6 +5,7 @@ export * from "./comment-captcha-settings";
 export * from "./admin-users";
 export * from "./admin-user-invitations";
 export * from "./banners";
+export * from "./album-categories";
 export * from "./photo-albums";
 export * from "./photo-album-photos";
 export * from "./qiniu-delete-tasks";
