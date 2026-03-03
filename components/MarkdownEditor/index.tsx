@@ -350,6 +350,73 @@ export const MarkdownEditor = React.forwardRef<
     [disabled, editor, readOnly],
   );
 
+  const handleDOMBeforeInput = useCallback(
+    (event: InputEvent) => {
+      if (disabled || readOnly) {
+        return;
+      }
+
+      if (typeof event.getTargetRanges !== "function") {
+        return;
+      }
+
+      const [targetRange] = event.getTargetRanges();
+      if (!targetRange) {
+        return;
+      }
+
+      const slateRange = ReactEditor.toSlateRange(editor, targetRange, {
+        exactMatch: false,
+        suppressThrow: true,
+      });
+
+      if (slateRange) {
+        return;
+      }
+
+      // Guard against browser/IME/extensions mutating editable DOM into a
+      // shape Slate cannot map (classic "Cannot resolve a Slate point..." crash).
+      event.preventDefault();
+
+      switch (event.inputType) {
+        case "insertText":
+        case "insertCompositionText": {
+          if (typeof event.data === "string" && event.data.length > 0) {
+            Editor.insertText(editor, event.data);
+          }
+          return true;
+        }
+        case "insertLineBreak":
+        case "insertParagraph": {
+          Editor.insertBreak(editor);
+          return true;
+        }
+        case "deleteContentBackward": {
+          Editor.deleteBackward(editor);
+          return true;
+        }
+        case "deleteWordBackward": {
+          Editor.deleteBackward(editor, { unit: "word" });
+          return true;
+        }
+        case "deleteSoftLineBackward": {
+          Editor.deleteBackward(editor, { unit: "line" });
+          return true;
+        }
+        case "deleteHardLineBackward": {
+          Editor.deleteBackward(editor, { unit: "block" });
+          return true;
+        }
+        default: {
+          // Force a remount to realign DOM map with Slate internal tree.
+          setSlateVersion((prev) => prev + 1);
+          return true;
+        }
+      }
+    },
+    [disabled, editor, readOnly],
+  );
+
   const handlePaste = useCallback(
     (event: React.ClipboardEvent<HTMLDivElement>) => {
       if (disabled || readOnly) {
@@ -551,12 +618,14 @@ export const MarkdownEditor = React.forwardRef<
           }}
         />
         <Editable
-          className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 focus:outline-none"
+          className="notranslate rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900 focus:outline-none"
           style={editorMinHeightStyle}
+          translate="no"
           renderElement={renderElement}
           renderLeaf={renderLeaf}
           placeholder={resolvedPlaceholder}
           readOnly={disabled || readOnly}
+          onDOMBeforeInput={handleDOMBeforeInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
           onDrop={handleDrop}
