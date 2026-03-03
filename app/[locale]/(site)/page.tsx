@@ -37,7 +37,7 @@ export default async function HomePage({ params }: HomePageProps) {
     .select()
     .from(posts)
     .orderBy(desc(posts.id))
-    .limit(3);
+    .limit(4);
   const bannerItems = await db
     .select()
     .from(banners)
@@ -47,7 +47,8 @@ export default async function HomePage({ params }: HomePageProps) {
     .select()
     .from(products)
     .where(eq(products.isActive, 1))
-    .orderBy(asc(products.sortOrder), desc(products.id));
+    .orderBy(asc(products.sortOrder), desc(products.id))
+    .limit(4);
   const hasMultipleBanners = bannerItems.length > 1;
   const bannerStepSeconds = 7;
   const bannerDuration = Math.max(1, bannerItems.length) * bannerStepSeconds;
@@ -277,7 +278,7 @@ export default async function HomePage({ params }: HomePageProps) {
           {productItems.length === 0 ? (
             <p className="mt-10 text-slate-500">{t("emptyProducts")}</p>
           ) : (
-            <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {productItems.map((product) => (
                 <div
                   key={product.id}

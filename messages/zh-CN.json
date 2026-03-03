@@ -64,6 +64,7 @@
       "backHome": "返回首页"
     },
     "albums": {
+      "eyebrow": "Albums",
       "title": "相册列表",
       "description": "按主题整理的影像记录与相册归档。",
       "empty": "暂无相册",

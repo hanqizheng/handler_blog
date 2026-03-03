@@ -64,6 +64,7 @@
       "backHome": "Back to home"
     },
     "albums": {
+      "eyebrow": "Albums",
       "title": "Albums",
       "description": "A curated collection of visual stories and albums.",
       "empty": "No albums yet.",
