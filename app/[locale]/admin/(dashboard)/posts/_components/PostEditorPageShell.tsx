@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 
-import { Link, useRouter } from "@/i18n/navigation";
-
-import { PostEditorForm } from "./PostEditorForm";
+import { Link } from "@/i18n/navigation";
 
 const LEAVE_CONFIRM_TEXT = "有未保存的更改，确定要离开吗？";
+const PostEditorForm = dynamic(
+  () => import("./PostEditorForm").then((mod) => mod.PostEditorForm),
+  { ssr: false },
+);
 
 type PostCategoryOption = {
   id: number;
@@ -39,7 +42,6 @@ type EditProps = CommonProps & {
 type PostEditorPageShellProps = CreateProps | EditProps;
 
 export function PostEditorPageShell(props: PostEditorPageShellProps) {
-  const router = useRouter();
   const dirtyRef = useRef(false);
   const [dirty, setDirty] = useState(false);
 
