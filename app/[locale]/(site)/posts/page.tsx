@@ -43,57 +43,70 @@ export default async function PostsPage() {
     .orderBy(desc(posts.id));
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-10">
-      <div className="space-y-3">
-        <p className="text-xs tracking-[0.3em] text-slate-500 uppercase">
-          {t("eyebrow")}
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          {t("title")}
-        </h1>
-        <p className="text-sm text-slate-500">{t("description")}</p>
-      </div>
-      {items.length === 0 ? (
-        <p className="mt-8 text-sm text-slate-600">{t("empty")}</p>
-      ) : (
-        <ul className="mt-8 space-y-4">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/posts/${item.id}?from=${encodeURIComponent("/posts")}`}
-                className="group flex w-full items-center gap-4"
-              >
-                <div className="h-20 w-32 shrink-0 overflow-hidden bg-slate-200">
-                  {item.coverImageUrl ? (
-                    <QiniuImage
-                      src={item.coverImageUrl}
-                      alt={item.title}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-slate-500">
-                      {t("noCover")}
+    <main className="w-full">
+      <section className="bg-slate-50 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <div className="space-y-3">
+            <p className="text-xs tracking-[0.3em] text-slate-500 uppercase">
+              {t("eyebrow")}
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+              {t("title")}
+            </h1>
+            <p className="max-w-xl text-base text-slate-600">
+              {t("description")}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 md:py-16">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          {items.length === 0 ? (
+            <p className="text-sm text-slate-600">{t("empty")}</p>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {items.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/posts/${item.id}?from=${encodeURIComponent("/posts")}`}
+                  className="group flex flex-col gap-5 py-8 first:pt-0 last:pb-0 sm:flex-row sm:gap-8"
+                >
+                  <div className="aspect-video w-full shrink-0 overflow-hidden bg-slate-100 sm:w-72">
+                    {item.coverImageUrl ? (
+                      <QiniuImage
+                        src={item.coverImageUrl}
+                        alt={item.title}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm text-slate-400">
+                        {t("noCover")}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      {item.categoryName ? (
+                        <>
+                          <span className="bg-slate-100 px-2 py-0.5 text-slate-600">
+                            {item.categoryName}
+                          </span>
+                          <span className="text-slate-300">|</span>
+                        </>
+                      ) : null}
+                      <span>{formatDateYmd(item.createdAt)}</span>
                     </div>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-1">
-                  <span className="text-lg font-bold text-slate-900 transition-colors group-hover:text-slate-600">
-                    {item.title}
-                  </span>
-                  {item.categoryName ? (
-                    <span className="inline-flex w-fit bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                      {item.categoryName}
-                    </span>
-                  ) : null}
-                  <span className="text-xs text-slate-500">
-                    {formatDateYmd(item.createdAt)}
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+                    <h2 className="mt-2 text-lg font-semibold text-slate-900 transition-colors group-hover:text-slate-600 md:text-xl">
+                      {item.title}
+                    </h2>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

@@ -71,54 +71,79 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
     : allItems;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-      <AlbumCategoryFilter
-        categories={categories}
-        allLabel={t("allCategories")}
-      />
-      {items.length === 0 ? (
-        <p className="mt-6 text-sm text-slate-600">{t("empty")}</p>
-      ) : (
-        <ul className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link
-                href={`/albums/${item.id}`}
-                className="block overflow-hidden bg-slate-50 transition hover:bg-slate-100"
-              >
-                {item.coverUrl ? (
-                  <QiniuImage
-                    src={item.coverUrl}
-                    alt={item.name}
-                    className="h-56 w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-56 w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
-                    {t("noCover")}
-                  </div>
-                )}
-                <div className="space-y-1 p-5">
-                  <p className="text-lg font-semibold">{item.name}</p>
-                  {item.description ? (
-                    <p className="text-sm text-slate-600">{item.description}</p>
-                  ) : null}
-                  <div className="flex items-center gap-2 pt-1">
-                    {item.categoryName ? (
-                      <span className="bg-slate-200 px-2 py-0.5 text-xs text-slate-600">
-                        {item.categoryName}
-                      </span>
-                    ) : null}
-                    <span className="text-xs text-slate-500">
-                      {formatDateYmd(item.createdAt)}
-                    </span>
-                  </div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+    <main className="w-full">
+      <section className="bg-slate-50 py-16 md:py-24">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <div className="space-y-3">
+            <p className="text-xs tracking-[0.3em] text-slate-500 uppercase">
+              {t("eyebrow")}
+            </p>
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+              {t("title")}
+            </h1>
+            <p className="max-w-xl text-base text-slate-600">
+              {t("description")}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 md:py-16">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <AlbumCategoryFilter
+            categories={categories}
+            allLabel={t("allCategories")}
+          />
+          {items.length === 0 ? (
+            <p className="mt-6 text-sm text-slate-600">{t("empty")}</p>
+          ) : (
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    href={`/albums/${item.id}`}
+                    className="group block overflow-hidden bg-slate-50 transition hover:bg-slate-100"
+                  >
+                    <div className="aspect-[4/3] w-full overflow-hidden">
+                      {item.coverUrl ? (
+                        <QiniuImage
+                          src={item.coverUrl}
+                          alt={item.name}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-slate-100 text-sm text-slate-500">
+                          {t("noCover")}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1.5 p-5">
+                      <p className="text-lg font-semibold text-slate-900 transition-colors group-hover:text-slate-600">
+                        {item.name}
+                      </p>
+                      {item.description ? (
+                        <p className="line-clamp-2 text-sm text-slate-600">
+                          {item.description}
+                        </p>
+                      ) : null}
+                      <div className="flex items-center gap-2 pt-1">
+                        {item.categoryName ? (
+                          <span className="bg-slate-200 px-2 py-0.5 text-xs text-slate-600">
+                            {item.categoryName}
+                          </span>
+                        ) : null}
+                        <span className="text-xs text-slate-500">
+                          {formatDateYmd(item.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
