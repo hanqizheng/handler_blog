@@ -46,8 +46,8 @@ export default async function RootLayout({
   const locale = requestHeaders.get("x-next-intl-locale") ?? defaultLocale;
 
   return (
-    <html lang={locale}>
-      <body>
+    <html lang={locale} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <div className="min-h-dvh bg-[rgb(var(--color-bg))] text-[rgb(var(--color-fg))]">
           {children}
         </div>

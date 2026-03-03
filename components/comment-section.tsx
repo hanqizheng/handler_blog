@@ -415,8 +415,13 @@ export function CommentSection({
             </span>
           ) : null}
           <p className="whitespace-pre-wrap">{entry.content}</p>
-          <span className={`mt-2 block text-xs ${metaClass}`}>
-            {new Date(entry.createdAt).toLocaleString()}
+          <span
+            className={`mt-2 block text-xs ${metaClass}`}
+            suppressHydrationWarning
+          >
+            {new Date(entry.createdAt).toLocaleString("zh-CN", {
+              hour12: false,
+            })}
           </span>
         </div>
       </div>

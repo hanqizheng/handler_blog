@@ -226,7 +226,10 @@ export function CommentManager({
               <CardContent className="space-y-2 text-sm">
                 <p>{replyTargetComment.content}</p>
                 <small className="text-muted-foreground">
-                  {new Date(replyTargetComment.createdAt).toLocaleString()}
+                  {new Date(replyTargetComment.createdAt).toLocaleString(
+                    "zh-CN",
+                    { hour12: false },
+                  )}
                 </small>
               </CardContent>
             </Card>
