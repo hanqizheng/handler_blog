@@ -295,19 +295,53 @@ export async function PUT(
     payload = null;
   }
 
-  const data = payload as { coverUrl?: unknown; categoryId?: unknown };
-  const coverUrl =
-    typeof data?.coverUrl === "string" ? data.coverUrl.trim() : "";
-  const categoryId =
-    typeof data?.categoryId === "number" && Number.isInteger(data.categoryId)
-      ? data.categoryId
-      : null;
-
-  const updateData: Record<string, unknown> = {
-    coverUrl: coverUrl || null,
+  const data = payload as {
+    name?: unknown;
+    description?: unknown;
+    coverUrl?: unknown;
+    categoryId?: unknown;
   };
-  if (categoryId !== null) {
-    updateData.categoryId = categoryId;
+  const updateData: Record<string, unknown> = {};
+
+  if (typeof data?.name === "string") {
+    const name = data.name.trim();
+    if (!name) {
+      return NextResponse.json(
+        { ok: false, error: "name is required" },
+        { status: 400 },
+      );
+    }
+    updateData.name = name;
+  }
+
+  if (typeof data?.description === "string") {
+    updateData.description = data.description.trim();
+  }
+
+  if (typeof data?.coverUrl === "string") {
+    const coverUrl = data.coverUrl.trim();
+    updateData.coverUrl = coverUrl || null;
+  }
+
+  if (data?.categoryId !== undefined) {
+    if (
+      typeof data.categoryId !== "number" ||
+      !Number.isInteger(data.categoryId) ||
+      data.categoryId <= 0
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "invalid category id" },
+        { status: 400 },
+      );
+    }
+    updateData.categoryId = data.categoryId;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json(
+      { ok: false, error: "no changes provided" },
+      { status: 400 },
+    );
   }
 
   await db.update(photoAlbums).set(updateData).where(eq(photoAlbums.id, id));
