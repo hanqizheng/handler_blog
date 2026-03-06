@@ -7,17 +7,12 @@ import { buildDrawerUrl } from "@/app/[locale]/admin/_components/admin-drawer-qu
 import { useQiniuUpload } from "@/hooks/useQiniuUpload-sdk";
 import { Button } from "@/components/ui/button";
 import { AdminFormDrawer } from "@/components/ui/admin-form-drawer";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-interface CategoryOption {
-  id: number;
-  name: string;
-}
+import { AlbumFormFields, type AlbumCategoryOption } from "./AlbumFormFields";
 
 interface AlbumCreateFormProps {
   drawerMode: "create" | null;
-  categories: CategoryOption[];
+  categories: AlbumCategoryOption[];
 }
 
 export function AlbumCreateForm({
@@ -31,7 +26,9 @@ export function AlbumCreateForm({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [categoryId, setCategoryId] = useState(1);
+  const [categoryId, setCategoryId] = useState<number | null>(
+    categories[0]?.id ?? null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dirty, setDirty] = useState(false);
 
@@ -45,10 +42,10 @@ export function AlbumCreateForm({
       setName("");
       setDescription("");
       setCoverFile(null);
-      setCategoryId(1);
+      setCategoryId(categories[0]?.id ?? null);
       setDirty(false);
     }
-  }, [drawerMode]);
+  }, [categories, drawerMode]);
 
   const navigateDrawer = useCallback(
     (mode: "create" | null) => {
@@ -64,6 +61,10 @@ export function AlbumCreateForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!categoryId) {
+      alert("请先创建并启用相册分类");
+      return;
+    }
     setIsSubmitting(true);
     try {
       const coverUrl = coverFile ? (await uploadFile(coverFile)).url : "";
@@ -107,61 +108,29 @@ export function AlbumCreateForm({
         dirty={dirty}
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <Label htmlFor="album-name">相册名称</Label>
-            <Input
-              id="album-name"
-              value={name}
-              onChange={(event) => {
-                if (!dirty) setDirty(true);
-                setName(event.target.value);
-              }}
-              placeholder="例如：旅行日记"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="album-desc">描述（可选）</Label>
-            <Input
-              id="album-desc"
-              value={description}
-              onChange={(event) => {
-                if (!dirty) setDirty(true);
-                setDescription(event.target.value);
-              }}
-              placeholder="相册说明"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="album-category">分类</Label>
-            <select
-              id="album-category"
-              value={categoryId}
-              onChange={(event) => {
-                if (!dirty) setDirty(true);
-                setCategoryId(Number(event.target.value));
-              }}
-              className="border-input focus-visible:ring-ring flex h-9 w-full border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="album-cover">封面（可选）</Label>
-            <Input
-              id="album-cover"
-              type="file"
-              accept="image/*"
-              onChange={(event) => {
-                if (!dirty) setDirty(true);
-                setCoverFile(event.target.files?.[0] ?? null);
-              }}
-            />
-          </div>
+          <AlbumFormFields
+            idsPrefix="album-create"
+            name={name}
+            description={description}
+            categoryId={categoryId}
+            categories={categories}
+            onNameChange={(value) => {
+              if (!dirty) setDirty(true);
+              setName(value);
+            }}
+            onDescriptionChange={(value) => {
+              if (!dirty) setDirty(true);
+              setDescription(value);
+            }}
+            onCategoryChange={(value) => {
+              if (!dirty) setDirty(true);
+              setCategoryId(value);
+            }}
+            onCoverChange={(file) => {
+              if (!dirty) setDirty(true);
+              setCoverFile(file);
+            }}
+          />
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? "创建中..." : "创建相册"}

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, desc, eq, or } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 import {
@@ -6,7 +6,7 @@ import {
   type AdminSearchParams,
 } from "@/app/[locale]/admin/_components/admin-drawer-query";
 import { db } from "@/db";
-import { photoAlbumPhotos, photoAlbums } from "@/db/schema";
+import { albumCategories, photoAlbumPhotos, photoAlbums } from "@/db/schema";
 
 import { AlbumCoverManager } from "./_components/AlbumCoverManager";
 import { AlbumPhotoManager } from "./_components/AlbumPhotoManager";
@@ -20,6 +20,7 @@ export default async function AdminAlbumDetailPage({
 }) {
   const resolvedSearchParams = await searchParams;
   const { mode: drawerMode } = parseDrawerState(resolvedSearchParams, [
+    "edit",
     "cover",
     "upload",
   ] as const);
@@ -45,6 +46,23 @@ export default async function AdminAlbumDetailPage({
     .where(eq(photoAlbumPhotos.albumId, albumId))
     .orderBy(photoAlbumPhotos.createdAt);
 
+  const categories = await db
+    .select({
+      id: albumCategories.id,
+      name: albumCategories.name,
+    })
+    .from(albumCategories)
+    .where(
+      or(
+        eq(albumCategories.isActive, 1),
+        eq(albumCategories.id, album.categoryId),
+      ),
+    )
+    .orderBy(asc(albumCategories.sortOrder), desc(albumCategories.id));
+
+  const albumEditorMode =
+    drawerMode === "edit" || drawerMode === "cover" ? "edit" : null;
+
   return (
     <section className="flex w-full flex-1 flex-col gap-6">
       <div>
@@ -55,9 +73,13 @@ export default async function AdminAlbumDetailPage({
       </div>
       <AlbumCoverManager
         albumId={album.id}
+        albumName={album.name}
+        albumDescription={album.description}
+        categoryId={album.categoryId}
+        categories={categories}
         albumSlug={album.slug}
         coverUrl={album.coverUrl}
-        drawerMode={drawerMode === "cover" ? "cover" : null}
+        drawerMode={albumEditorMode}
       />
       <AlbumPhotoManager
         albumId={album.id}
