@@ -27,6 +27,7 @@ export async function SiteFooter() {
               width={160}
               height={40}
               className="h-10 w-auto"
+              style={{ width: "auto" }}
             />
             <p className="max-w-xs text-sm leading-relaxed text-slate-600">
               {t("tagline")}
