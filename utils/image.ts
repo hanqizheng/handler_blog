@@ -13,6 +13,8 @@ const normalizePathSegment = (path: string) =>
 const isAbsoluteUrl = (url: string) => /^https?:\/\//i.test(url);
 const isLocalBlobUrl = (url: string) => /^blob:|^data:/i.test(url);
 
+export type QiniuImageVariant = "hero" | "card" | "thumb" | "full";
+
 const getProxyBase = () => {
   if (!PUBLIC_PROXY_DOMAIN) return DEFAULT_PROXY_DOMAIN;
   const normalized = normalizeBase(PUBLIC_PROXY_DOMAIN);

@@ -306,11 +306,12 @@ export function ImagePreviewGallery({
             <QiniuImage
               src={image.src}
               alt={image.alt ?? ""}
+              variant="thumb"
               className={cn(
                 "h-auto w-full rounded-lg object-contain transition duration-300 group-hover:opacity-90",
                 imageClassName,
               )}
-              loading="lazy"
+              sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
             />
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-lg bg-slate-900/0 text-white opacity-0 transition group-hover:bg-slate-900/20 group-hover:opacity-100">
               <ZoomIn className="h-5 w-5" aria-hidden="true" />
