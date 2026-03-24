@@ -109,6 +109,8 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
                         <QiniuImage
                           src={item.coverUrl}
                           alt={item.name}
+                          variant="card"
+                          sizes="(min-width: 1280px) 22rem, (min-width: 640px) 50vw, 100vw"
                           className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
                         />
                       ) : (

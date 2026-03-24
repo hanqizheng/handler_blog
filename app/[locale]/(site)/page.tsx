@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { db } from "@/db";
 import { banners, posts, products } from "@/db/schema";
+import { HomeHeroCarousel } from "@/app/[locale]/(site)/_components/HomeHeroCarousel";
 import { QiniuImage } from "@/components/qiniu-image";
 import { buildPageMetadata, getSiteName, resolveLocale } from "@/lib/seo";
 
@@ -49,9 +50,13 @@ export default async function HomePage({ params }: HomePageProps) {
     .where(eq(products.isActive, 1))
     .orderBy(asc(products.sortOrder), desc(products.id))
     .limit(4);
-  const hasMultipleBanners = bannerItems.length > 1;
-  const bannerStepSeconds = 7;
-  const bannerDuration = Math.max(1, bannerItems.length) * bannerStepSeconds;
+  const heroItems = bannerItems.map((banner) => ({
+    id: banner.id,
+    imageUrl: banner.imageUrl,
+    linkUrl: banner.linkUrl,
+    title: banner.mainTitle ?? siteName,
+    subtitle: banner.subTitle ?? t("bannerFallbackSubtitle"),
+  }));
 
   return (
     <main className="w-full">
@@ -80,124 +85,8 @@ export default async function HomePage({ params }: HomePageProps) {
             </div>
           </div>
         ) : (
-          <div className="absolute inset-0">
-            {bannerItems.map((banner, index) => {
-              const slideStyle = hasMultipleBanners
-                ? {
-                    animationDelay: `${index * bannerStepSeconds}s`,
-                    animationDuration: `${bannerDuration}s`,
-                  }
-                : undefined;
-              const textStyle = hasMultipleBanners
-                ? {
-                    animationDelay: `${index * bannerStepSeconds}s`,
-                    animationDuration: `${bannerDuration}s`,
-                  }
-                : undefined;
-
-              const slideTitle = banner.mainTitle ?? siteName;
-              const slideSubtitle =
-                banner.subTitle ?? t("bannerFallbackSubtitle");
-
-              return banner.linkUrl ? (
-                <a
-                  key={banner.id}
-                  href={banner.linkUrl}
-                  className={`absolute inset-0 block ${
-                    hasMultipleBanners
-                      ? "banner-slide opacity-0"
-                      : "opacity-100"
-                  }`}
-                  style={slideStyle}
-                >
-                  <QiniuImage
-                    src={banner.imageUrl}
-                    alt={slideTitle}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black/80" />
-                  <div
-                    className={`relative z-10 flex h-full items-end px-6 pb-16 md:pb-24 ${
-                      hasMultipleBanners ? "banner-text" : ""
-                    }`}
-                    style={textStyle}
-                  >
-                    <div
-                      className="mx-auto w-full max-w-6xl space-y-4 text-left text-white"
-                      style={{
-                        fontFamily:
-                          "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
-                      }}
-                    >
-                      <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
-                        {slideTitle}
-                      </h1>
-                      <p className="max-w-2xl text-lg font-medium text-white/85 md:text-2xl">
-                        {slideSubtitle}
-                      </p>
-                    </div>
-                  </div>
-                </a>
-              ) : (
-                <div
-                  key={banner.id}
-                  className={`absolute inset-0 ${
-                    hasMultipleBanners
-                      ? "banner-slide opacity-0"
-                      : "opacity-100"
-                  }`}
-                  style={slideStyle}
-                >
-                  <QiniuImage
-                    src={banner.imageUrl}
-                    alt={slideTitle}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-b from-black/20 via-black/55 to-black/80" />
-                  <div
-                    className={`relative z-10 flex h-full items-end px-6 pb-16 md:pb-24 ${
-                      hasMultipleBanners ? "banner-text" : ""
-                    }`}
-                    style={textStyle}
-                  >
-                    <div
-                      className="mx-auto w-full max-w-6xl space-y-4 text-left text-white"
-                      style={{
-                        fontFamily:
-                          "SF Pro Display, SF Pro Text, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
-                      }}
-                    >
-                      <h1 className="text-4xl leading-tight font-semibold md:text-6xl">
-                        {slideTitle}
-                      </h1>
-                      <p className="max-w-2xl text-lg font-medium text-white/85 md:text-2xl">
-                        {slideSubtitle}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <HomeHeroCarousel items={heroItems} />
         )}
-        <div className="pointer-events-none absolute inset-x-0 bottom-10 flex items-center justify-center gap-2">
-          {bannerItems.map((banner, index) => (
-            <span
-              key={banner.id}
-              className={`h-1 w-6 rounded-full bg-white/50 ${
-                hasMultipleBanners ? "banner-indicator" : "opacity-80"
-              }`}
-              style={
-                hasMultipleBanners
-                  ? {
-                      animationDelay: `${index * bannerStepSeconds}s`,
-                      animationDuration: `${bannerDuration}s`,
-                    }
-                  : undefined
-              }
-            />
-          ))}
-        </div>
       </section>
 
       <section className="relative min-h-[80vh] w-full overflow-hidden bg-white py-28 md:py-36">
@@ -239,6 +128,8 @@ export default async function HomePage({ params }: HomePageProps) {
                       <QiniuImage
                         src={item.coverImageUrl}
                         alt={item.title}
+                        variant="card"
+                        sizes="(min-width: 768px) 50vw, 100vw"
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
                       />
                     ) : (
@@ -339,25 +230,6 @@ export default async function HomePage({ params }: HomePageProps) {
       </section>
 
       <style>{`
-        .banner-slide {
-          animation-name: bannerFade;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-        }
-
-        .banner-text {
-          animation-name: bannerText;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-        }
-
-        .banner-indicator {
-          animation-name: bannerIndicator;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-          opacity: 0.35;
-        }
-
         .float-slow {
           animation: floatSlow 12s ease-in-out infinite;
         }
@@ -372,70 +244,6 @@ export default async function HomePage({ params }: HomePageProps) {
 
         .post-glow {
           animation: postGlow 6s ease-in-out infinite;
-        }
-
-        @keyframes bannerFade {
-          0% {
-            opacity: 0;
-          }
-          12% {
-            opacity: 1;
-          }
-          32% {
-            opacity: 1;
-          }
-          48% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 0;
-          }
-        }
-
-        @keyframes bannerText {
-          0% {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          12% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          30% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-          40% {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(12px);
-          }
-        }
-
-        @keyframes bannerIndicator {
-          0% {
-            opacity: 0.35;
-            width: 24px;
-          }
-          10% {
-            opacity: 0.95;
-            width: 42px;
-          }
-          25% {
-            opacity: 0.95;
-            width: 42px;
-          }
-          35% {
-            opacity: 0.35;
-            width: 24px;
-          }
-          100% {
-            opacity: 0.35;
-            width: 24px;
-          }
         }
 
         @keyframes floatSlow {
@@ -486,9 +294,6 @@ export default async function HomePage({ params }: HomePageProps) {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .banner-slide,
-          .banner-text,
-          .banner-indicator,
           .float-slow,
           .float-fast,
           .rise-in,

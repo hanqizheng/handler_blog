@@ -77,6 +77,8 @@ export default async function PostsPage() {
                       <QiniuImage
                         src={item.coverImageUrl}
                         alt={item.title}
+                        variant="card"
+                        sizes="(min-width: 640px) 18rem, 100vw"
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
                       />
                     ) : (
