@@ -7,15 +7,15 @@ interface CategoryOption {
   name: string;
 }
 
-interface AlbumCategoryFilterProps {
+interface SiteCategoryFilterProps {
   categories: CategoryOption[];
   allLabel: string;
 }
 
-export function AlbumCategoryFilter({
+export function SiteCategoryFilter({
   categories,
   allLabel,
-}: AlbumCategoryFilterProps) {
+}: SiteCategoryFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -23,17 +23,19 @@ export function AlbumCategoryFilter({
 
   const handleClick = (slug: string) => {
     const params = new URLSearchParams(searchParams.toString());
+
     if (slug) {
       params.set("category", slug);
     } else {
       params.delete("category");
     }
+
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   const baseClass =
-    "px-3 py-1 text-sm transition-colors cursor-pointer select-none";
+    "cursor-pointer select-none px-3 py-1 text-sm transition-colors";
   const activeClass = "bg-slate-900 text-white";
   const inactiveClass = "bg-slate-100 text-slate-600 hover:bg-slate-200";
 
@@ -46,14 +48,14 @@ export function AlbumCategoryFilter({
       >
         {allLabel}
       </button>
-      {categories.map((cat) => (
+      {categories.map((category) => (
         <button
-          key={cat.slug}
+          key={category.slug}
           type="button"
-          className={`${baseClass} ${current === cat.slug ? activeClass : inactiveClass}`}
-          onClick={() => handleClick(cat.slug)}
+          className={`${baseClass} ${current === category.slug ? activeClass : inactiveClass}`}
+          onClick={() => handleClick(category.slug)}
         >
-          {cat.name}
+          {category.name}
         </button>
       ))}
     </div>

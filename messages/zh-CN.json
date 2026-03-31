@@ -55,7 +55,8 @@
       "title": "文章列表",
       "description": "按时间排序，记录每一次灵感与沉淀。",
       "empty": "暂无文章",
-      "noCover": "暂无封面"
+      "noCover": "暂无封面",
+      "allCategories": "全部"
     },
     "postDetail": {
       "notFound": "文章不存在",

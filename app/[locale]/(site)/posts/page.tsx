@@ -1,8 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { QiniuImage } from "@/components/qiniu-image";
+import { SiteCategoryFilter } from "@/components/site-category-filter";
 import { db } from "@/db";
 import { postCategories, posts } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
@@ -11,6 +12,7 @@ import { formatDateYmd } from "@/utils/date";
 
 type PostsPageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({
@@ -28,19 +30,44 @@ export async function generateMetadata({
   });
 }
 
-export default async function PostsPage() {
+export default async function PostsPage({ searchParams }: PostsPageProps) {
   const t = await getTranslations("site.posts");
-  const items = await db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      coverImageUrl: posts.coverImageUrl,
-      createdAt: posts.createdAt,
-      categoryName: postCategories.name,
-    })
-    .from(posts)
-    .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
-    .orderBy(desc(posts.id));
+  const resolvedSearchParams = await searchParams;
+  const categorySlug =
+    typeof resolvedSearchParams.category === "string"
+      ? resolvedSearchParams.category
+      : "";
+
+  const [categories, allItems] = await Promise.all([
+    db
+      .select({
+        id: postCategories.id,
+        name: postCategories.name,
+        slug: postCategories.slug,
+      })
+      .from(postCategories)
+      .where(eq(postCategories.isActive, 1))
+      .orderBy(asc(postCategories.sortOrder), desc(postCategories.id)),
+    db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        coverImageUrl: posts.coverImageUrl,
+        createdAt: posts.createdAt,
+        categoryName: postCategories.name,
+        categorySlug: postCategories.slug,
+      })
+      .from(posts)
+      .leftJoin(postCategories, eq(posts.categoryId, postCategories.id))
+      .orderBy(desc(posts.id)),
+  ]);
+
+  const items = categorySlug
+    ? allItems.filter((item) => item.categorySlug === categorySlug)
+    : allItems;
+  const currentListPath = categorySlug
+    ? `/posts?category=${encodeURIComponent(categorySlug)}`
+    : "/posts";
 
   return (
     <main className="w-full">
@@ -62,14 +89,18 @@ export default async function PostsPage() {
 
       <section className="bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-6">
+          <SiteCategoryFilter
+            categories={categories}
+            allLabel={t("allCategories")}
+          />
           {items.length === 0 ? (
-            <p className="text-sm text-slate-600">{t("empty")}</p>
+            <p className="mt-6 text-sm text-slate-600">{t("empty")}</p>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="mt-8 divide-y divide-slate-100">
               {items.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/posts/${item.id}?from=${encodeURIComponent("/posts")}`}
+                  href={`/posts/${item.id}?from=${encodeURIComponent(currentListPath)}`}
                   className="group flex flex-col gap-5 py-8 first:pt-0 last:pb-0 sm:flex-row sm:gap-8"
                 >
                   <div className="aspect-video w-full shrink-0 overflow-hidden bg-slate-100 sm:w-72">

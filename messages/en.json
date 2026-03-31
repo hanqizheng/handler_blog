@@ -55,7 +55,8 @@
       "title": "Post List",
       "description": "Sorted by time to capture each idea and reflection.",
       "empty": "No posts yet.",
-      "noCover": "No cover image"
+      "noCover": "No cover image",
+      "allCategories": "All"
     },
     "postDetail": {
       "notFound": "Post not found.",

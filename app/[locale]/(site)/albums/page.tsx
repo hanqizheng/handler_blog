@@ -2,14 +2,13 @@ import { desc, eq, asc } from "drizzle-orm";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
+import { SiteCategoryFilter } from "@/components/site-category-filter";
 import { db } from "@/db";
 import { albumCategories, photoAlbums } from "@/db/schema";
 import { Link } from "@/i18n/navigation";
 import { QiniuImage } from "@/components/qiniu-image";
 import { buildPageMetadata, resolveLocale } from "@/lib/seo";
 import { formatDateYmd } from "@/utils/date";
-
-import { AlbumCategoryFilter } from "./_components/AlbumCategoryFilter";
 
 type AlbumsPageProps = {
   params: Promise<{ locale: string }>;
@@ -90,7 +89,7 @@ export default async function AlbumsPage({ searchParams }: AlbumsPageProps) {
 
       <section className="bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-6">
-          <AlbumCategoryFilter
+          <SiteCategoryFilter
             categories={categories}
             allLabel={t("allCategories")}
           />
