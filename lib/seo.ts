@@ -41,6 +41,10 @@ export function getSiteDefaultDescription(locale?: string | Locale) {
 export const SITE_NAME = getSiteName();
 export const SITE_DEFAULT_DESCRIPTION = getSiteDefaultDescription();
 
+export function getBaiduSiteVerification() {
+  return readEnv("BAIDU_SITE_VERIFICATION");
+}
+
 function trimTrailingSlash(input: string) {
   return input.replace(/\/+$/, "");
 }

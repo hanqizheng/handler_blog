@@ -1,12 +1,18 @@
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 
-import { getSiteUrl, SITE_DEFAULT_DESCRIPTION, SITE_NAME } from "@/lib/seo";
+import {
+  getBaiduSiteVerification,
+  getSiteUrl,
+  SITE_DEFAULT_DESCRIPTION,
+  SITE_NAME,
+} from "@/lib/seo";
 
 import "./globals.css";
 
 const defaultLocale = "zh-CN";
 const siteUrl = getSiteUrl();
+const baiduSiteVerification = getBaiduSiteVerification();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -35,6 +41,13 @@ export const metadata: Metadata = {
     title: SITE_NAME,
     description: SITE_DEFAULT_DESCRIPTION,
   },
+  ...(baiduSiteVerification
+    ? {
+        other: {
+          "baidu-site-verification": baiduSiteVerification,
+        },
+      }
+    : {}),
 };
 
 export default async function RootLayout({
