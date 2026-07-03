@@ -5,7 +5,8 @@ import type { Locale } from "@/types/i18n";
 import { isLocale } from "@/utils/isLocale";
 
 const FALLBACK_SITE_URL = "http://localhost:3000";
-const FALLBACK_SITE_NAME = "Site";
+const FALLBACK_SITE_NAME = "Huteng | Hu Teng's Personal Site";
+const FALLBACK_SITE_NAME_ZH = "鹄腾｜胡腾个人主页";
 const FALLBACK_SITE_DESCRIPTION_ZH = "在这里填写你的网站简介。";
 const FALLBACK_SITE_DESCRIPTION_EN = "Describe your website here.";
 
@@ -19,7 +20,7 @@ export function getSiteName(locale?: string | Locale) {
     return (
       readEnv("NEXT_PUBLIC_SITE_NAME_ZH") ??
       readEnv("NEXT_PUBLIC_SITE_NAME") ??
-      FALLBACK_SITE_NAME
+      FALLBACK_SITE_NAME_ZH
     );
   }
 
