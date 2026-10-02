@@ -2,6 +2,10 @@
 .env.local
 .env.*.local
 .env.production
+.env
+.env.development
+.env.test
+__pycache__/
 
 .deploy/
 .deploy.env

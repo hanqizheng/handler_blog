@@ -6,6 +6,8 @@ import { photoAlbums, posts } from "@/db/schema";
 import { getLocalizedPath, toAbsoluteUrl } from "@/lib/seo";
 import type { Locale } from "@/types/i18n";
 
+export const dynamic = "force-dynamic";
+
 const staticPaths = ["/", "/posts", "/albums", "/about"] as const;
 
 type UrlEntry = {

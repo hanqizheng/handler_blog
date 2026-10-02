@@ -10,6 +10,9 @@ import {
 
 import "./globals.css";
 
+// Database-backed pages read production data at request time, not during image builds.
+export const dynamic = "force-dynamic";
+
 const defaultLocale = "zh-CN";
 const siteUrl = getSiteUrl();
 const baiduSiteVerification = getBaiduSiteVerification();

@@ -1,0 +1,33 @@
+name: handler-blog
+
+services:
+  app:
+    image: ${HANDLER_BLOG_IMAGE:?Set the exact image reference}
+    container_name: handler-blog-app
+    restart: unless-stopped
+    # Linux production server: preserve existing loopback DATABASE_URL connections.
+    network_mode: host
+    env_file:
+      - ${HANDLER_BLOG_ENV_FILE:-/opt/handler-blog/envs/app.env}
+    environment:
+      NODE_ENV: production
+      # Match Next.js loopback normalization; IPv4-first still binds only 127.0.0.1.
+      HOSTNAME: localhost
+      NODE_OPTIONS: --dns-result-order=ipv4first
+      PORT: ${HANDLER_BLOG_PORT:-8284}
+    init: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
