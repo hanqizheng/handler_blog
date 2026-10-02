@@ -57,6 +57,7 @@ if args and args[0] == "compose":
     operation = args[args.index("--env-file") + 2]
     if operation == "config": finish()
     if operation == "run":
+        if "scripts/check-runtime-env.mjs" in args: finish(1 if scenario == "env-check-fails" else 0)
         if "--name" in args:
             state["probe"] = True
             finish()
@@ -187,6 +188,13 @@ class DeploymentTests(unittest.TestCase):
 
     def test_healthy_database_with_failed_homepage_keeps_current_app(self):
         result, state = self.deploy("homepage-fails")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(state["app"])
+        self.assertFalse(state["probe"])
+        self.assertFalse(any("up" in call[1] for call in self.calls()))
+
+    def test_failed_runtime_configuration_keeps_current_app(self):
+        result, state = self.deploy("env-check-fails")
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(state["app"])
         self.assertFalse(state["probe"])

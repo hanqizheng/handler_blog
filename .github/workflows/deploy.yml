@@ -15,6 +15,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -75,6 +76,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: production
     permissions:
       contents: read
@@ -113,7 +115,7 @@ jobs:
       - name: Load exact built image and sync runtime
         run: |
           set -euo pipefail
-          ssh_options=(-p "$DEPLOY_SSH_PORT" -i "$RUNNER_TEMP/handler-blog-ssh/key" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/handler-blog-ssh/known_hosts")
+          ssh_options=(-p "$DEPLOY_SSH_PORT" -i "$RUNNER_TEMP/handler-blog-ssh/key" -o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/handler-blog-ssh/known_hosts")
           target="$DEPLOY_USER@$DEPLOY_HOST"
           image_repository="${IMAGE_REFERENCE%:*}"
           docker pull "${image_repository}@${IMAGE_DIGEST}"

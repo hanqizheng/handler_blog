@@ -52,6 +52,16 @@ healthy() {
   done
   return 1
 }
+diagnose() {
+  local port=$1
+  local container=$2
+  # Emit only status codes/state; never print logs, env or resolved config.
+  docker inspect --format 'container status={{.State.Status}} exit={{.State.ExitCode}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container" 2>/dev/null || true
+  printf '[deploy] Database health HTTP status: '
+  curl -sS --max-time 5 -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:$port/api/health" 2>/dev/null || true
+  printf '[deploy] Homepage HTTP status: '
+  curl -sSL --max-redirs 3 --max-time 5 -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:$port/zh-CN" 2>/dev/null || true
+}
 cleanup() {
   local status=$?
   trap - EXIT
@@ -96,6 +106,12 @@ trap 'exit 143' TERM
 
 if [[ "$RUN_MIGRATIONS" = 1 ]]; then
   [[ -n "${MIGRATION_BACKUP_FILE:-}" && "$MIGRATION_BACKUP_FILE" = /* && -s "$MIGRATION_BACKUP_FILE" ]] || die "Migrations require an existing nonempty absolute MIGRATION_BACKUP_FILE"
+fi
+
+echo "[deploy] Validating runtime variable names/configuration"
+compose run --rm --no-deps --pull never app node scripts/check-runtime-env.mjs
+
+if [[ "$RUN_MIGRATIONS" = 1 ]]; then
   echo "[deploy] Applying migrations; database changes are not automatically rolled back"
   compose run --rm --no-deps --pull never app node scripts/migrate.mjs
 fi
@@ -103,14 +119,14 @@ fi
 echo "[deploy] Checking candidate image on loopback port $PROBE_PORT"
 PROBE_STARTED=1
 compose run -d --no-deps --pull never --name "$PROBE_NAME" -e PORT="$PROBE_PORT" app >/dev/null
-healthy "$PROBE_PORT" "$PROBE_NAME" || die "Candidate failed database/page checks; current service retained"
+healthy "$PROBE_PORT" "$PROBE_NAME" || { diagnose "$PROBE_PORT" "$PROBE_NAME"; die "Candidate failed database/page checks; current service retained"; }
 docker rm -f "$PROBE_NAME" >/dev/null
 PROBE_STARTED=0
 
 echo "[deploy] Promoting candidate to loopback port $APP_PORT"
 PROMOTING=1
 compose up -d --no-deps --force-recreate --pull never app
-healthy "$APP_PORT" handler-blog-app || die "Production health check failed"
+healthy "$APP_PORT" handler-blog-app || { diagnose "$APP_PORT" handler-blog-app; die "Production health check failed"; }
 if [[ -n "$PREVIOUS_IMAGE" ]]; then
   printf '%s\n' "$PREVIOUS_IMAGE" > "$ROOT/.previous_image.tmp"
   mv "$ROOT/.previous_image.tmp" "$ROOT/.previous_image"
