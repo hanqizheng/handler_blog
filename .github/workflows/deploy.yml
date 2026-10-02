@@ -1,26 +1,132 @@
-name: migrate-and-deploy
+name: Build and deploy Docker
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: handler-blog-production
+  cancel-in-progress: false
+
 jobs:
-  migrate:
+  build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.reference }}
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm db:migrate
+      - name: Test deployment contracts
+        run: |
+          python3 -I -S -m unittest discover -s tests/deployment -v
+          bash -n scripts/server/deploy-on-server.sh
+          node --check scripts/check-runtime-env.mjs
+          node --check scripts/migrate.mjs
+      - name: Image reference
+        id: image
+        run: |
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "reference=ghcr.io/${repository}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Public build configuration
+        id: public
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DRIZZLE_ENV: production
-      - run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_SITE_NAME: ${{ vars.NEXT_PUBLIC_SITE_NAME }}
+          NEXT_PUBLIC_SITE_NAME_ZH: ${{ vars.NEXT_PUBLIC_SITE_NAME_ZH }}
+          NEXT_PUBLIC_SITE_DESCRIPTION_ZH: ${{ vars.NEXT_PUBLIC_SITE_DESCRIPTION_ZH }}
+          NEXT_PUBLIC_SITE_DESCRIPTION_EN: ${{ vars.NEXT_PUBLIC_SITE_DESCRIPTION_EN }}
+          NEXT_PUBLIC_ALIYUN_CAPTCHA_PREFIX: ${{ vars.NEXT_PUBLIC_ALIYUN_CAPTCHA_PREFIX }}
+          NEXT_PUBLIC_ALIYUN_CAPTCHA_SCENE_ID: ${{ vars.NEXT_PUBLIC_ALIYUN_CAPTCHA_SCENE_ID }}
+          NEXT_PUBLIC_QINIU_DISPLAY_DOMAIN: ${{ vars.NEXT_PUBLIC_QINIU_DISPLAY_DOMAIN }}
+          NEXT_PUBLIC_QINIU_SOURCE_DOMAIN: ${{ vars.NEXT_PUBLIC_QINIU_SOURCE_DOMAIN }}
+        run: |
+          public_args=$(python3 -I -S scripts/read-build-config.py)
+          delimiter="PUBLIC_ARGS_$(cat /proc/sys/kernel/random/uuid)"
+          {
+            echo "args<<$delimiter"
+            printf '%s\n' "$public_args"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.reference }}
+          build-args: ${{ steps.public.outputs.args }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=handler-blog
+          cache-to: type=gha,mode=max,scope=handler-blog
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_REFERENCE: ${{ needs.build.outputs.image }}
+      IMAGE_DIGEST: ${{ needs.build.outputs.digest }}
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT || '22' }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      RUN_MIGRATIONS: ${{ vars.RUN_DB_MIGRATIONS || '0' }}
+      MIGRATION_BACKUP_FILE: ${{ vars.MIGRATION_BACKUP_FILE }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare SSH
+        run: |
+          [[ "$DEPLOY_HOST" =~ ^[a-zA-Z0-9.:-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$DEPLOY_SSH_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ -n "$DEPLOY_SSH_KEY" && -n "$DEPLOY_KNOWN_HOSTS" ]]
+          [[ "$RUN_MIGRATIONS" = 0 || "$RUN_MIGRATIONS" = 1 ]]
+          if [[ "$RUN_MIGRATIONS" = 1 ]]; then
+            [[ "$MIGRATION_BACKUP_FILE" =~ ^/[a-zA-Z0-9_./-]+$ ]]
+          fi
+          install -m 700 -d "$RUNNER_TEMP/handler-blog-ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/handler-blog-ssh/key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/handler-blog-ssh/known_hosts"
+          chmod 600 "$RUNNER_TEMP/handler-blog-ssh/key" "$RUNNER_TEMP/handler-blog-ssh/known_hosts"
+      - name: Load exact built image and sync runtime
+        run: |
+          set -euo pipefail
+          ssh_options=(-p "$DEPLOY_SSH_PORT" -i "$RUNNER_TEMP/handler-blog-ssh/key" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/handler-blog-ssh/known_hosts")
+          target="$DEPLOY_USER@$DEPLOY_HOST"
+          image_repository="${IMAGE_REFERENCE%:*}"
+          docker pull "${image_repository}@${IMAGE_DIGEST}"
+          docker tag "${image_repository}@${IMAGE_DIGEST}" "$IMAGE_REFERENCE"
+          ssh "${ssh_options[@]}" "$target" 'test -d /opt/handler-blog/scripts && test -d /opt/handler-blog/deploy && sudo -n test -f /opt/handler-blog/envs/app.env'
+          docker save "$IMAGE_REFERENCE" | gzip | ssh "${ssh_options[@]}" "$target" 'bash -c "set -euo pipefail; gzip -d | sudo -n docker load >/dev/null"'
+          # Deploy only reviewed runtime files. Production env is never uploaded or sourced.
+          tar -czf - deploy/docker-compose.yml scripts/server/deploy-on-server.sh | \
+            ssh "${ssh_options[@]}" "$target" 'set -eu; runtime_dir=$(mktemp -d /tmp/handler-blog-runtime.XXXXXX); trap '\''rm -rf "$runtime_dir"'\'' EXIT; tar -xzf - -C "$runtime_dir"; install -m 644 "$runtime_dir/deploy/docker-compose.yml" /opt/handler-blog/deploy/docker-compose.yml; install -m 755 "$runtime_dir/scripts/server/deploy-on-server.sh" /opt/handler-blog/scripts/deploy-on-server.sh'
+          printf -v remote_command 'sudo -n env RUN_MIGRATIONS=%q MIGRATION_BACKUP_FILE=%q bash /opt/handler-blog/scripts/deploy-on-server.sh %q' "$RUN_MIGRATIONS" "$MIGRATION_BACKUP_FILE" "$IMAGE_REFERENCE"
+          # This command is intentionally quoted on the runner with printf %q.
+          # shellcheck disable=SC2029
+          ssh "${ssh_options[@]}" "$target" "$remote_command"
+      - name: Remove temporary SSH material
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/handler-blog-ssh"

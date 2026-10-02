@@ -1,9 +1,23 @@
 # Blog
 
+## Production deployment
+
+The production configuration builds a Docker image with GitHub Actions on pushes to `main` or
+manual workflow dispatch. The application reuses the existing server MySQL
+instance. Runtime credentials stay in `/opt/handler-blog/envs/app.env`; they are
+never uploaded by CI or copied into the image. See [Docker deployment and PM2
+cutover](docs/docker-deployment.md) for bootstrap, GitHub Secrets, credential
+rotation, migrations, health checks and rollback.
+
+The root `docker-compose.yml` is the existing local development database. The
+production application uses `deploy/docker-compose.yml`. `scripts/deploy.sh`
+is the legacy PM2 path and must not be used after switching to Docker, because
+it packages local production credentials into each release.
+
 ## Branding & SEO
 
-Configure these in `.env.local` / production env to control site display and SEO
-branding text:
+Configure these in `.env.local` for local development, or `deploy/build.env`
+(optionally overridden by GitHub Actions Variables) for Docker builds:
 
 - `NEXT_PUBLIC_SITE_URL`
 - `NEXT_PUBLIC_SITE_NAME`
