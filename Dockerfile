@@ -41,7 +41,8 @@ RUN pnpm prune --prod
 
 FROM node:22-bookworm-slim AS runner
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=8284 HOSTNAME=127.0.0.1
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=8284 HOSTNAME=localhost \
+    NODE_OPTIONS=--dns-result-order=ipv4first
 RUN groupadd --gid 1001 nodejs && useradd --uid 1001 --gid nodejs --no-create-home nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=production-dependencies --chown=nextjs:nodejs /app/node_modules ./node_modules

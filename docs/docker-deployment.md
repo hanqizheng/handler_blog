@@ -26,7 +26,11 @@
 生产数据库不需要开放给 GitHub 构建。依赖采用 frozen lockfile 并禁用安装生命周期脚本。
 
 运行时 Next.js 收到 Compose 注入的环境，因此不再需要将本地 `.env.production`
-作为线上配置。生产 Compose 显式固定 NODE_ENV、HOSTNAME 和 PORT，覆盖 env 文件中的对应项。
+作为线上配置。生产 Compose 显式固定 NODE_ENV、HOSTNAME、NODE_OPTIONS 和 PORT，覆盖 env 文件中的对应项。
+HOSTNAME 使用 localhost，配合 NODE_OPTIONS=--dns-result-order=ipv4first，实际监听仍为
+127.0.0.1。这避开 Next.js 对 loopback 地址归一化不一致造成的 next-intl 重定向循环
+（[Next.js issue #94745](https://github.com/vercel/next.js/issues/94745)）。
+运行验证需在相同端口/监听环境下进行，不能仅用 Docker 端口映射代替生产 loopback 测试。
 服务器脚本不会 `source` 环境文件，含 `$` 的 secret 不会被 shell 执行；但 Compose
 仍有 dotenv 插值规则，值含 `$` 时应使用单引号字面值，例如 `AUTH_SECRET='含$的值'`。
 不要把换行私钥放进 app.env，它由 GitHub SSH Secret 单独管理。

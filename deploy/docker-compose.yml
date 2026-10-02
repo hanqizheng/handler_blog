@@ -11,7 +11,9 @@ services:
       - ${HANDLER_BLOG_ENV_FILE:-/opt/handler-blog/envs/app.env}
     environment:
       NODE_ENV: production
-      HOSTNAME: 127.0.0.1
+      # Match Next.js loopback normalization; IPv4-first still binds only 127.0.0.1.
+      HOSTNAME: localhost
+      NODE_OPTIONS: --dns-result-order=ipv4first
       PORT: ${HANDLER_BLOG_PORT:-8284}
     init: true
     cap_drop:

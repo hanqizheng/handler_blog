@@ -16,6 +16,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: fixture-only
+          MYSQL_DATABASE: handler_blog
+          MYSQL_USER: blog
+          MYSQL_PASSWORD: fixture-only
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     permissions:
       contents: read
       packages: write
@@ -72,6 +87,54 @@ jobs:
           labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           cache-from: type=gha,scope=handler-blog
           cache-to: type=gha,mode=max,scope=handler-blog
+
+      - name: Verify production loopback routing against fixture MySQL
+        env:
+          TEST_IMAGE: ${{ steps.image.outputs.reference }}
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL=mysql://blog:fixture-only@127.0.0.1:3306/handler_blog \
+            "$TEST_IMAGE" node scripts/migrate.mjs
+          docker run --rm -i --network host \
+            -e DATABASE_URL=mysql://blog:fixture-only@127.0.0.1:3306/handler_blog \
+            -e ADMIN_AUTH_SECRET=fixture-only \
+            --entrypoint node "$TEST_IMAGE" - <<'JS'
+          const {spawn}=require('node:child_process');
+          const {readFileSync}=require('node:fs');
+          const assert=require('node:assert/strict');
+          const server=spawn(process.execPath,['server.js'],{stdio:'inherit'});
+          (async()=>{
+            try {
+              let ready=false;
+              for(let i=0;i<60;i++) {
+                try {
+                  const r=await fetch('http://127.0.0.1:8284/api/health',{signal:AbortSignal.timeout(1000)});
+                  if(r.status===200) {ready=true;break;}
+                } catch {}
+                await new Promise(r=>setTimeout(r,250));
+              }
+              assert.ok(ready,'Fixture application did not become healthy');
+              for(const path of ['/','/zh-CN','/en','/posts','/admin/login']) {
+                const r=await fetch('http://127.0.0.1:8284'+path,{signal:AbortSignal.timeout(10000)});
+                assert.equal(r.status,200,path+' did not render');
+              }
+              const protectedPage=await fetch('http://127.0.0.1:8284/admin',{redirect:'manual'});
+              assert.equal(protectedPage.status,307);
+              assert.equal(new URL(protectedPage.headers.get('location'),'http://127.0.0.1:8284').pathname,'/admin/login');
+              const tls=await fetch('http://127.0.0.1:8284/',{headers:{'x-forwarded-proto':'https','x-forwarded-host':'www.huteng.com'},signal:AbortSignal.timeout(10000)});
+              assert.equal(tls.status,200,'TLS proxy request failed');
+              const socket=readFileSync('/proc/net/tcp','utf8').split('\n').find(l=>l.trim().split(/\s+/)[1]?.endsWith(':205C'));
+              assert.ok(socket,'No IPv4 listener');
+              assert.equal(socket.trim().split(/\s+/)[1],'0100007F:205C','Listener must be loopback-only');
+              console.log('Production loopback routing and IPv4-only listener verified');
+            } catch(e) {
+              console.error(e.message);
+              process.exitCode=1;
+            } finally {
+              server.kill('SIGTERM');
+            }
+          })();
+          JS
 
   deploy:
     needs: build
